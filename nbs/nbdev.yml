@@ -4,6 +4,6 @@ project:
 website:
   title: "af_kit"
   site-url: "https://sky1ove.github.io/af_kit"
-  description: "Useful functions in analyzing alphafold output result"
+  description: "Useful functions in preparing AF input and analyzing its output"
   repo-branch: main
   repo-url: "https://github.com/sky1ove/af_kit"

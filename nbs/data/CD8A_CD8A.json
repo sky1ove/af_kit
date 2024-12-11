@@ -1,0 +1,31 @@
+{
+    "name": "CD8A_CD8A",
+    "modelSeeds": [
+        1
+    ],
+    "sequences": [
+        {
+            "protein": {
+                "id": "A",
+                "sequence": "SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD",
+                "modifications": [],
+                "unpairedMsaPath": "/root/af_input/data/CD8A.a3m",
+                "pairedMsa": "",
+                "templates": null
+            }
+        },
+        {
+            "protein": {
+                "id": "B",
+                "sequence": "SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD",
+                "modifications": [],
+                "unpairedMsaPath": "/root/af_input/data/CD8A.a3m",
+                "pairedMsa": "",
+                "templates": null
+            }
+        }
+    ],
+    "bondedAtomPairs": [],
+    "dialect": "alphafold3",
+    "version": 2
+}
