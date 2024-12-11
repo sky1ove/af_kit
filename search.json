@@ -1,0 +1,112 @@
+[
+  {
+    "objectID": "prepare_json.html#instructions",
+    "href": "prepare_json.html#instructions",
+    "title": "Prepare input json",
+    "section": "Instructions",
+    "text": "Instructions\n\nGenerate af_input folder outside of alphafold3 folder\n\nMake sure A3M dir is within this folder\n\nHave af_model, af_output, af_database folder prepare in the same parent folder\nWhen mount docker path, add the above directory\nAdd af_report folder for saving report files\n\ncd alphafold3\ndocker build -t alphafold3 -f docker/Dockerfile .\ndocker run --rm \\\n    --volume $HOME/af_input:/root/af_input \\\n    --volume $HOME/af_output:/root/af_output \\\n    --volume $HOME/af_model:/root/models \\\n    --volume $HOME/af_database:/root/public_databases \\\n    --gpus \"device=0\" \\\n    alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/{path_to_json_folder}/ \\\n    --output_dir=/root/af_output/{path_to_output} \\\n    --model_dir=/root/models\nUse json_path instead of input_dir if specific json file",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#sequence-only-input",
+    "href": "prepare_json.html#sequence-only-input",
+    "title": "Prepare input json",
+    "section": "Sequence only input",
+    "text": "Sequence only input\n\ndefault pipeline\n\n\nsource\n\nget_AF_input_seq\n\n get_AF_input_seq (name, seq)\n\nGenerate AF input file of protein sequence only\n\ndata = get_AF_input_seq('proteinA','AAA')\ndata\n\n{'name': 'proteinA',\n 'modelSeeds': [1],\n 'sequences': [{'protein': {'id': 'A', 'sequence': 'AAA'}}],\n 'bondedAtomPairs': [],\n 'dialect': 'alphafold3',\n 'version': 2}\n\n\n\nsource\n\n\nwrite_json\n\n write_json (data, save_path)\n\n\nwrite_json(data,'data/proteinA_seq_only.json')\n\n\nsource\n\n\nread_json\n\n read_json (file_path)\n\n\nread_json('data/proteinA_seq_only.json')\n\n{'name': 'proteinA',\n 'modelSeeds': [1],\n 'sequences': [{'protein': {'id': 'A', 'sequence': 'AAA'}}],\n 'bondedAtomPairs': [],\n 'dialect': 'alphafold3',\n 'version': 2}",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#protein-protein-input",
+    "href": "prepare_json.html#protein-protein-input",
+    "title": "Prepare input json",
+    "section": "Protein-protein input",
+    "text": "Protein-protein input\n\nsource\n\na3m_to_seq\n\n a3m_to_seq (file_path:pathlib.Path)\n\nGet protein sequence from a3m file\n\na3m_to_seq(Path('data/CD8A.a3m'))\n\n'SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD'\n\n\n\nsource\n\n\nget_protein_json\n\n get_protein_json (gene_name, a3m_dir='.', idx='A', run_template=True)\n\nGet alphafold format protein json from a3m file; make sure a3m_dir is under af_input\n\nprotein_json = get_protein_json('CD8A',a3m_dir='data',idx='A')\n\n\nprotein_json.keys()\n\ndict_keys(['id', 'sequence', 'modifications', 'unpairedMsaPath', 'pairedMsa', 'templates'])\n\n\n\nsource\n\n\nget_AF_input\n\n get_AF_input (gene_list, a3m_dir, run_template=True)\n\nGet AF3 input json data, allows multiple genes/proteins\n\nAF_input = get_AF_input(['CD8A','CD8A'],a3m_dir='data')\n\n\nAF_input.keys(), len(AF_input['sequences'])\n\n(dict_keys(['name', 'modelSeeds', 'sequences', 'bondedAtomPairs', 'dialect', 'version']),\n 2)\n\n\n\nsource\n\n\nsave_json\n\n save_json (json_data, folder)\n\nSave json to file\n\nsave_json(AF_input,'data')\n\n\nsource\n\n\ngenerate_pair_df\n\n generate_pair_df (gene_list, self_pair=True)\n\nUnique pair genes in a gene list\n\ngenerate_pair_df(list('ABC'))\n\n\n\n\n\n\n\n\nGene1\nGene2\n\n\n\n\n0\nA\nB\n\n\n1\nA\nC\n\n\n2\nB\nC\n\n\n3\nA\nA\n\n\n4\nB\nB\n\n\n5\nC\nC\n\n\n\n\n\n\n\n\ndf = generate_pair_df(['CD8A'])\ndf\n\n\n\n\n\n\n\n\nGene1\nGene2\n\n\n\n\n0\nCD8A\nCD8A\n\n\n\n\n\n\n\n\nsource\n\n\nsave_input\n\n save_input (pair_df, a3m_dir, save_dir, nfolder=4)\n\nSave Alphafold input file in a directory with separate folder for parallel calculating\n\nsave_input(df,a3m_dir='data',save_dir='data')\n\n100%|██████████| 1/1 [00:00&lt;00:00, 276.92it/s]\n\n\nIn data folder, it will generate folder_0 to folder_n\n\n\nExample for multiple genes:\ncheck_genes = ['CD8A','geneB']\nprint(len(df.id.unique()))\n\nfor gene in check_genes:\n    gene_df = pd.DataFrame({'Gene1':gene,'Gene2':df.id.unique()})\n    save_input(gene_df,a3m_dir='a3m_dir',save_dir=f'af_input/{gene}')\n    print('done for', gene)\n    break",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#protein-smiles",
+    "href": "prepare_json.html#protein-smiles",
+    "title": "Prepare input json",
+    "section": "Protein-SMILES",
+    "text": "Protein-SMILES\n\nFirst run the normal sequence only pipeline for the protein\nGet the output data.json file, read it, load the [\"sequences\"][0][\"protein\"]\n\n\nsource\n\nget_AF_input_smi\n\n get_AF_input_smi (smi_idx, smiles, protein_json)\n\nGenerate AF input file for smiles protein docking task\n\nfname = 'data/seq_only_data.json'\nprotein_json = read_json(fname)\n\n\nstr(get_AF_input_smi('smi_name','CCC',protein_json))[:100]\n\n\"{'name': 'smi_name', 'modelSeeds': [1], 'sequences': [{'ligand': {'id': 'L', 'smiles': 'CCC'}}, {'pr\"\n\n\n\nsource\n\n\nsave_input_smi\n\n save_input_smi (df, id_col, smi_col, protein_json, save_dir)\n\n\ndf = pd.DataFrame({'idx':['a','b'],'smi':['CCC','OCO']})\ndf\n\n\n\n\n\n\n\n\nidx\nsmi\n\n\n\n\n0\na\nCCC\n\n\n1\nb\nOCO\n\n\n\n\n\n\n\n\nsave_input_smi(df,'idx','smi',protein_json,save_dir='data')\n\n100%|██████████| 2/2 [00:00&lt;00:00, 93.69it/s]",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#end",
+    "href": "prepare_json.html#end",
+    "title": "Prepare input json",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "hpc_run.html",
+    "href": "hpc_run.html",
+    "title": "Singularity & slurm",
+    "section": "",
+    "text": "Check version before downloading singularity deb\nlsb_release -a # check ubuntu version\nwget https://github.com/sylabs/singularity/releases/download/v4.2.1/singularity-ce_4.2.1-focal_amd64.deb\nsudo dpkg –install singularity-ce_4.2.1-focal_amd64.deb sudo apt-get install -f\nCUDA_VISIBLE_DEVICES=3 singularity exec –nv alphafold3.sif\npython -u alphafold3/run_alphafold.py\n–input_dir=af_input_ECD_Immunoglobulin/folder_3\n–output_dir=af_output_ECD_Immunoglobulin\n–model_dir=af_models\n–jax_compilation_cache_dir=af_cache/cache\n–norun_data_pipeline | tee run.log\nCUDA_VISIBLE_DEVICES=3 singularity exec –nv alphafold3.sif\npython -u alphafold3/run_alphafold.py\n–json_path=af_input_ECD_Immunoglobulin/folder_3/IL6ST_NCR1.json\n–output_dir=af_output_ECD_Immunoglobulin\n–model_dir=af_models\n–jax_compilation_cache_dir=af_cache/cache\n–norun_data_pipeline | tee run.log",
+    "crumbs": [
+      "Singularity & slurm"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "af_kit",
+    "section": "",
+    "text": "Install latest from the GitHub repository:\n$ pip install git+https://github.com/sky1ove/af_kit.git\nor from pypi\n$ pip install af_kit",
+    "crumbs": [
+      "af_kit"
+    ]
+  },
+  {
+    "objectID": "index.html#usage",
+    "href": "index.html#usage",
+    "title": "af_kit",
+    "section": "",
+    "text": "Install latest from the GitHub repository:\n$ pip install git+https://github.com/sky1ove/af_kit.git\nor from pypi\n$ pip install af_kit",
+    "crumbs": [
+      "af_kit"
+    ]
+  },
+  {
+    "objectID": "analyze_output.html#read-summary-confidences-json",
+    "href": "analyze_output.html#read-summary-confidences-json",
+    "title": "Analyze output",
+    "section": "Read summary confidences json",
+    "text": "Read summary confidences json\n\nsource\n\nread_summary_json\n\n read_summary_json (json_path)\n\nRead json file to dictionary\n\ndata = read_summary_json('data/seq_only_summary_confidences.json')\ndata\n\n{'ID': 'seq_only_summary_confidences',\n 'chain_iptm_0': None,\n 'chain_pair_iptm_0_0': 0.72,\n 'chain_pair_pae_min_0_0': 0.76,\n 'chain_ptm_0': 0.72,\n 'fraction_disordered': 0.19,\n 'has_clash': 0.0,\n 'iptm': None,\n 'ptm': 0.72,\n 'ranking_score': 0.82}\n\n\n\nsource\n\n\nget_summary_df\n\n get_summary_df (output_dir)\n\nPack the summary json from the output folder to the df\n\nout = get_summary_df('data')\nout\n\n1 summary_confidences.json files detected\n\n\n\n\n\n\n\n\n\nID\nchain_iptm_0\nchain_pair_iptm_0_0\nchain_pair_pae_min_0_0\nchain_ptm_0\nfraction_disordered\nhas_clash\niptm\nptm\nranking_score\n\n\n\n\n0\nseq_only_summary_confidences\nNone\n0.72\n0.76\n0.72\n0.19\n0.0\nNone\n0.72\n0.82",
+    "crumbs": [
+      "Analyze output"
+    ]
+  },
+  {
+    "objectID": "analyze_output.html#specific-for-protein-pairs",
+    "href": "analyze_output.html#specific-for-protein-pairs",
+    "title": "Analyze output",
+    "section": "Specific for protein pairs",
+    "text": "Specific for protein pairs\n\nsource\n\nprocess_summary_df\n\n process_summary_df (df, generate_report=False)\n\nPost process the json-converted pandas df; remove redundant columns; available for pairs\n\n# it's only available for protein pairs\n# out2 = process_summary_df(out)\n\n\nsource\n\n\nget_top_genes\n\n get_top_genes (df, n=30)\n\nGet top genes from the metric\n\n# genes = get_top_genes(out2)\n\n\nsource\n\n\nget_3d_report\n\n get_3d_report (df, index_list, x='iptm', y='ptm',\n                z='chain_pair_pae_min_add', save_dir='af_report')\n\nPlot plotly 3d\n\n# get_3d_report(out2,genes)\n\n\nsource\n\n\nget_report\n\n get_report (out_dir, save_dir='af_report')\n\ndf_sum, top_genes = get_report('af_output/data','af_report/proteinA')\ndf_sum.sort_values('iptm_ptm_rnk_add').head(10)\n\nfrom fastcore.utils import L\n\n\nsource\n\n\ncopy_file\n\n copy_file (idx_name, source_dir, dest_dir)\n\ncopy_file('proA_proB',source_dir='af_output/proA',dest_dir='af_top')\n# Or \nL(top_genes).map(copy_file,source_dir='af_output/proA',dest_dir='af_top')",
+    "crumbs": [
+      "Analyze output"
+    ]
+  },
+  {
+    "objectID": "analyze_output.html#end",
+    "href": "analyze_output.html#end",
+    "title": "Analyze output",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Analyze output"
+    ]
+  }
+]
