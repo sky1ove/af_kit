@@ -156,7 +156,7 @@ def get_report(out_dir,save_dir='af_report'):
     
     return out, top_genes
 
-# %% ../nbs/01_analyze_output.ipynb 20
+# %% ../nbs/01_analyze_output.ipynb 18
 def copy_file(idx_name, source_dir, dest_dir):
     source_path = Path(source_dir)/f"{idx_name}/{idx_name}_model.cif"
     dest_path = Path(dest_dir)/f"{idx_name}_model.cif"

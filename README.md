@@ -10,15 +10,3 @@ Install latest from the [GitHub](https://github.com/sky1ove/af_kit):
 ``` sh
 $ pip install -U git+https://github.com/sky1ove/af_kit.git
 ```
-
-## Quick start
-
-``` python
-from af_kit.core import *
-```
-
-### JSON input
-
-### Docker command
-
-### Output analysis
