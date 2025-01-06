@@ -5,7 +5,8 @@
 
 ## Installation
 
-Install latest from the [GitHub](https://github.com/sky1ove/af_kit):
+Install latest from the [af_kit GitHub
+Repository](https://github.com/sky1ove/af_kit):
 
 ``` sh
 $ pip install -U git+https://github.com/sky1ove/af_kit.git
