@@ -105,13 +105,9 @@ def copy_a3m(a3m_dir: str, # Path to the source directory containing .a3m files.
 
 # %% ../nbs/00_prepare_json.ipynb 22
 def split_files_into_folders(input_folder: str, nfolder: int = 4):
-    """
-    Splits `.a3m` files in a folder into subfolders (folder_0, folder_1, ..., folder_N).
     
-    Args:
-        input_folder (str): Path to the folder containing `.a3m` files.
-        nfolder (int): Number of subfolders to create. Default is 4.
-    """
+    "Splits `.a3m` files in a folder into subfolders (folder_0, folder_1, ..., folder_N)."
+    
     input_path = Path(input_folder)
     if not input_path.is_dir():
         raise ValueError(f"Input folder {input_folder} does not exist or is not a directory.")
