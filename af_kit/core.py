@@ -33,10 +33,8 @@ def get_docker_command(
     cmd_parts = ["docker run --rm \\"]
 
     if json_path:
-        json_path = Path(json_path)
-        json_dir = json_path.parent
-        json_basename = json_path.name
-        cmd_parts.append(f'    --volume "$HOME/{json_dir}:/root/af_input" \\')
+        parent_dir=json_path.split('/')[0]
+        cmd_parts.append(f'    --volume "$HOME/{parent_dir}:/root/af_input" \\')
     else:
         parent_dir = input_dir.split('/')[0]
         cmd_parts.append(f'    --volume "$HOME/{parent_dir}:/root/af_input" \\')
@@ -57,7 +55,8 @@ def get_docker_command(
                       '    python run_alphafold.py \\'])
     
     if json_path:
-        cmd_parts.append(f'    --json_path=/root/af_input/{json_basename} \\')
+        mount_path= '/'.join(json_path.split('/')[1:])
+        cmd_parts.append(f'    --json_path=/root/af_input/{mount_path} \\')
     else:
         len_dir = len(input_dir.split('/')[1:])
         if len_dir:
