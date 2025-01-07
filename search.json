@@ -1,0 +1,192 @@
+[
+  {
+    "objectID": "prepare_json.html#instructions",
+    "href": "prepare_json.html#instructions",
+    "title": "Prepare input json",
+    "section": "Instructions",
+    "text": "Instructions\n\nDocker image\nTo build docker image:\ngit clone https://github.com/google-deepmind/alphafold3.git\ncd alphafold3\ndocker build -t alphafold3 -f docker/Dockerfile .\nI also regularly updated alphafold3 docker on the dockerhub, so you can also pull the image from there:\ndocker pull sky1ove/alphafold3\n\n\nDocker command\nBefore running, make sure you have af_model, af_output, af_database folder prepared in the current directory\n\nsource\n\n\nget_docker_command\n\n get_docker_command (input_dir='af_input', output_dir='af_output',\n                     model_dir='af_model', db_dir='af_database',\n                     cache_dir='cache', gpus=0,\n                     docker_name='sky1ove/alphafold3', embedding=True,\n                     skip_search=False, search_only=False, json_path=None)\n\nGenerate a Docker run command for Alphafold with customizable parameters.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ninput_dir\nstr\naf_input\nDirectory for input data\n\n\noutput_dir\nstr\naf_output\nDirectory for output results\n\n\nmodel_dir\nstr\naf_model\nDirectory containing models\n\n\ndb_dir\nstr\naf_database\nDirectory for databases. If None, this option is ommitted\n\n\ncache_dir\nstr\ncache\nDirectory for JAX compilation cache. If None, this option is omitted\n\n\ngpus\nint\n0\nGPU devices to allocate (e.g., 0,1), if None, ommitted\n\n\ndocker_name\nstr\nsky1ove/alphafold3\nDocker image name\n\n\nembedding\nbool\nTrue\nIf True, includes the –save_embeddings=true flag\n\n\nskip_search\nbool\nFalse\nIf True, includes the –norun_data_pipeline flag\n\n\nsearch_only\nbool\nFalse\nIf True, sets skip_search to False and includes the –norun_inference flag\n\n\njson_path\nNoneType\nNone\nPath to JSON file. If not None, uses json_file instead of input_dir\n\n\n\nSingle json file:\n\n# for single json file, we don't need to cache the model\nget_docker_command(json_path=\"af_input/subfolder/data.json\",\n                   output_dir=\"af_output/subfolder\",\n                   cache_dir=False)\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/subfolder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --json_path=/root/af_input/subfolder/data.json \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --save_embeddings=true\n\n\nInput directory with json files:\n\n# For a number of json files in the input folder\nget_docker_command(input_dir=\"af_input/subfolder/folder_0\",\n                   output_dir=\"af_output/subfolder\")\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/subfolder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/cache:/root/cache\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/subfolder/folder_0 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --save_embeddings=true\n\n\nBoth above will search database first then run the GPU inference",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#msa",
+    "href": "prepare_json.html#msa",
+    "title": "Prepare input json",
+    "section": "MSA",
+    "text": "MSA\n\nsource\n\ncopy_a3m\n\n copy_a3m (a3m_dir:str, dest_dir:str)\n\nCopies all .a3m files from the source directory to the destination directory.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\na3m_dir\nstr\nPath to the source directory containing .a3m files.\n\n\ndest_dir\nstr\nPath to the destination directory where files will be copied\n\n\n\n\ncopy_a3m(a3m_dir='data',dest_dir='af_input')\n\nCopying files: 100%|██████████| 1/1 [00:00&lt;00:00, 897.75file/s]\n\n\nCopied 1 a3m files from data to af_input",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#utils",
+    "href": "prepare_json.html#utils",
+    "title": "Prepare input json",
+    "section": "Utils",
+    "text": "Utils\n\nsource\n\nsplit_files_into_folders\n\n split_files_into_folders (input_folder:str, nfolder:int=4)\n\nSplits .a3m files in a folder into subfolders (folder_0, folder_1, …, folder_N).",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#sequence-only-input",
+    "href": "prepare_json.html#sequence-only-input",
+    "title": "Prepare input json",
+    "section": "Sequence only input",
+    "text": "Sequence only input\n\ndefault pipeline\n\n\nsource\n\nget_AF_input_seq\n\n get_AF_input_seq (name, seq)\n\nGenerate AF input file of protein sequence only\n\ndata = get_AF_input_seq('proteinA','AAA')\ndata\n\n{'name': 'proteinA',\n 'modelSeeds': [1],\n 'sequences': [{'protein': {'id': 'A', 'sequence': 'AAA'}}],\n 'bondedAtomPairs': [],\n 'dialect': 'alphafold3',\n 'version': 2}\n\n\n\nsource\n\n\ndump_json\n\n dump_json (data, save_path)\n\n\ndump_json(data,'data/proteinA_seq_only.json')\n\n\nsource\n\n\nread_json\n\n read_json (file_path)\n\n\nread_json('data/proteinA_seq_only.json')\n\n{'name': 'proteinA',\n 'modelSeeds': [1],\n 'sequences': [{'protein': {'id': 'A', 'sequence': 'AAA'}}],\n 'bondedAtomPairs': [],\n 'dialect': 'alphafold3',\n 'version': 2}",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#protein-protein-input",
+    "href": "prepare_json.html#protein-protein-input",
+    "title": "Prepare input json",
+    "section": "Protein-protein input",
+    "text": "Protein-protein input\n\n\n\n\n\n\nImportant\n\n\n\nMake sure a3m files are under af_input, otherwise it won’t detect the files\n\n\n\nsource\n\na3m_to_seq\n\n a3m_to_seq (file_path:pathlib.Path)\n\nGet protein sequence from a3m file\n\na3m_to_seq(Path('af_input/subfolder/a3m/CD8A.a3m'))\n\n'SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD'\n\n\n\nsource\n\n\nget_protein_json\n\n get_protein_json (gene_name, a3m_dir='.', idx='A', run_template=True)\n\nGet alphafold format protein json from a3m file; make sure a3m_dir is under af_input\n\nprotein_json = get_protein_json('CD8A',a3m_dir='af_input/subfolder/a3m')\n\n\nprotein_json\n\n{'id': 'A',\n 'sequence': 'SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD',\n 'modifications': [],\n 'unpairedMsaPath': '/root/af_input/subfolder/a3m/CD8A.a3m',\n 'pairedMsa': '',\n 'templates': None}\n\n\n\nsource\n\n\nsave_json\n\n save_json (json_data, folder)\n\nSave json under a folder\n\nsave_json(data,'data')\n\n\nsource\n\n\nget_AF_input\n\n get_AF_input (gene_list, a3m_dir, run_template=True, save_folder=None)\n\nGet AF3 input json data, allows multiple genes/proteins\n\nAF_input = get_AF_input(['CD8A','CD8A'],\n                        a3m_dir='af_input/subfolder/a3m',\n                        save_folder='af_input/subfolder')\n\nYou can generate a list of json files under a folder.\n\nAF_input.keys(), len(AF_input['sequences'])\n\n(dict_keys(['name', 'modelSeeds', 'sequences', 'bondedAtomPairs', 'dialect', 'version']),\n 2)\n\n\n\nsource\n\n\ngenerate_pair_df\n\n generate_pair_df (gene_list, self_pair=True)\n\nUnique pair genes in a gene list\n\ngenerate_pair_df(list('ABC'))\n\n\n\n\n\n\n\n\nGene1\nGene2\n\n\n\n\n0\nA\nB\n\n\n1\nA\nC\n\n\n2\nB\nC\n\n\n3\nA\nA\n\n\n4\nB\nB\n\n\n5\nC\nC\n\n\n\n\n\n\n\n\ndf = generate_pair_df(['CD8A'])\ndf\n\n\n\n\n\n\n\n\nGene1\nGene2\n\n\n\n\n0\nCD8A\nCD8A\n\n\n\n\n\n\n\n\nsource\n\n\nsplit_nfolder\n\n split_nfolder (folder_dir, n=4)\n\nSplits json files in a folder into subfolders (folder_0, folder_1, …, folder_N).\nGenerate json files first:\n\nfor idx, row in tqdm(df.iterrows(),total=len(df)):\n    json_data = get_AF_input([row['Gene1'], row['Gene2']], \n                             a3m_dir='af_input/subfolder/a3m', \n                             save_folder='af_input/subfolder')\n\n100%|██████████| 1/1 [00:00&lt;00:00, 416.80it/s]\n\n\nSplit them to subfolder:\n\nsplit_nfolder('af_input/subfolder')\n\nDistributed 1 files into 4 folders.",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#protein-smiles",
+    "href": "prepare_json.html#protein-smiles",
+    "title": "Prepare input json",
+    "section": "Protein-SMILES",
+    "text": "Protein-SMILES\n\nFirst run the normal sequence only pipeline for the protein\nGet the output data.json file, read it, load the [\"sequences\"][0][\"protein\"]\n\n\nsource\n\nget_AF_input_smi\n\n get_AF_input_smi (smi_idx, smiles, protein_json)\n\nGenerate AF input file for smiles protein docking task\n\nfname = 'data/seq_only_data.json'\nprotein_json = read_json(fname)\n\n\nstr(get_AF_input_smi('smi_name','CCC',protein_json))[:100]\n\n\"{'name': 'smi_name', 'modelSeeds': [1], 'sequences': [{'ligand': {'id': 'L', 'smiles': 'CCC'}}, {'pr\"\n\n\n\nsource\n\n\nsave_input_smi\n\n save_input_smi (df, id_col, smi_col, protein_json, save_dir)\n\n\ndf = pd.DataFrame({'idx':['a','b'],'smi':['CCC','OCO']})\ndf\n\n\n\n\n\n\n\n\nidx\nsmi\n\n\n\n\n0\na\nCCC\n\n\n1\nb\nOCO\n\n\n\n\n\n\n\n\nsave_input_smi(df,'idx','smi',protein_json,save_dir='data')\n\n100%|██████████| 2/2 [00:00&lt;00:00, 129.22it/s]",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "prepare_json.html#end",
+    "href": "prepare_json.html#end",
+    "title": "Prepare input json",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Prepare input json"
+    ]
+  },
+  {
+    "objectID": "hpc_run.html",
+    "href": "hpc_run.html",
+    "title": "Singularity & slurm",
+    "section": "",
+    "text": "Check version before downloading singularity deb\nlsb_release -a # check ubuntu version\nwget https://github.com/sylabs/singularity/releases/download/v4.2.1/singularity-ce_4.2.1-focal_amd64.deb\nsudo dpkg –install singularity-ce_4.2.1-focal_amd64.deb sudo apt-get install -f\nCUDA_VISIBLE_DEVICES=3 singularity exec –nv alphafold3.sif\npython -u alphafold3/run_alphafold.py\n–input_dir=af_input_ECD_Immunoglobulin/folder_3\n–output_dir=af_output_ECD_Immunoglobulin\n–model_dir=af_models\n–jax_compilation_cache_dir=af_cache/cache\n–norun_data_pipeline | tee run.log\nCUDA_VISIBLE_DEVICES=3 singularity exec –nv alphafold3.sif\npython -u alphafold3/run_alphafold.py\n–json_path=af_input_ECD_Immunoglobulin/folder_3/IL6ST_NCR1.json\n–output_dir=af_output_ECD_Immunoglobulin\n–model_dir=af_models\n–jax_compilation_cache_dir=af_cache/cache\n–norun_data_pipeline | tee run.log",
+    "crumbs": [
+      "Singularity & slurm"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "af_kit",
+    "section": "",
+    "text": "Install latest from the af_kit GitHub Repository:\n$ pip install -U git+https://github.com/sky1ove/af_kit.git",
+    "crumbs": [
+      "af_kit"
+    ]
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "af_kit",
+    "section": "",
+    "text": "Install latest from the af_kit GitHub Repository:\n$ pip install -U git+https://github.com/sky1ove/af_kit.git",
+    "crumbs": [
+      "af_kit"
+    ]
+  },
+  {
+    "objectID": "tutorial_00.html",
+    "href": "tutorial_00.html",
+    "title": "Tutorial",
+    "section": "",
+    "text": "pip install -U git+https://github.com/sky1ove/af_kit.git",
+    "crumbs": [
+      "Tutorial"
+    ]
+  },
+  {
+    "objectID": "tutorial_00.html#msa",
+    "href": "tutorial_00.html#msa",
+    "title": "Tutorial",
+    "section": "MSA",
+    "text": "MSA\nMSA can be run in cpu only server\n\npip install \"colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold\"\n\nPrepare a csv that have first column id and second column sequence of amino acid sequence\n\ncolabfold_batch file.csv folder_name --msa-only\n\nAfter finish, copy a3m files to a gpu available place\n\nsubfolder='project_name'\n\n\ncopy_a3m(a3m_dir=f'/teamspace/studios/alphfold3/msa_{subfolder}',\n         dest_dir=f'af_input/{subfolder}/msa')",
+    "crumbs": [
+      "Tutorial"
+    ]
+  },
+  {
+    "objectID": "tutorial_00.html#json-file",
+    "href": "tutorial_00.html#json-file",
+    "title": "Tutorial",
+    "section": "JSON file",
+    "text": "JSON file\n\nfrom af_kit.core import *\nimport pandas as pd\nfrom tqdm import tqdm\n\nRead the file that contained id and sequence\n\ndf = pd.read_csv('file.csv')\n\n\nfor idx, row in tqdm(df.iterrows(),total=len(df)):\n    data = get_AF_input([row.id], # if multiple protein, put their id in the []\n                        a3m_dir=f'af_input/{subfolder}/msa',\n                        save_folder=f'af_input/{subfolder}'\n                        )\n\nThis will generate a number of json files in the save_folder.\nWe need to distribute them to nfolders for parallel running when multiple gpus are available.\n\nsplit_nfolder(f'af_input/{subfolder}',n=4) # default n is 4",
+    "crumbs": [
+      "Tutorial"
+    ]
+  },
+  {
+    "objectID": "tutorial_00.html#docker-command",
+    "href": "tutorial_00.html#docker-command",
+    "title": "Tutorial",
+    "section": "Docker Command",
+    "text": "Docker Command\n\ndocker pull sky1ove/alphafold3\n\n\nfor i in range(4):\n    get_docker_command(input_dir=f\"af_input/{subfolder}/folder_{i}\",\n                       output_dir=f\"af_output/{subfolder}\",\n                       gpus=i)\n\nRun the printed command in your terminal",
+    "crumbs": [
+      "Tutorial"
+    ]
+  },
+  {
+    "objectID": "tutorial_00.html#report-for-protein-pairs",
+    "href": "tutorial_00.html#report-for-protein-pairs",
+    "title": "Tutorial",
+    "section": "Report for protein pairs",
+    "text": "Report for protein pairs\n\nfrom af_kit.analyze import *\n\n\ndf_sum, top_genes = get_report(f\"af_output/{subfolder}\",\n                               save_dir=f'af_report/{subfolder}')\n\ndf_sum.sort_values('iptm_ptm_rnk_add').head(10)\n\nA 3d plot will be generated with x=‘iptm’,y=‘ptm’,z=‘chain_pair_pae_min_add’\nTop genes are: - Smallest 30 from ‘iptm_ptm_rnk_add’, ‘chain_pair_pae_min_add’, ‘chain_pair_pae_min_0_1’, ‘chain_pair_pae_min_1_0’, ‘iptm_pae_add_rnk’ - Largest 30 from ‘ranking_score’, ‘iptm’, ‘iptm_ptm_add’\ndf_sum contains the score for each metric",
+    "crumbs": [
+      "Tutorial"
+    ]
+  },
+  {
+    "objectID": "tutorial_00.html#embeddings",
+    "href": "tutorial_00.html#embeddings",
+    "title": "Tutorial",
+    "section": "Embeddings",
+    "text": "Embeddings\nTo do",
+    "crumbs": [
+      "Tutorial"
+    ]
+  },
+  {
+    "objectID": "analyze_output.html#read-summary-confidences-json",
+    "href": "analyze_output.html#read-summary-confidences-json",
+    "title": "Analyze output",
+    "section": "Read summary confidences json",
+    "text": "Read summary confidences json\n\nsource\n\nread_summary_json\n\n read_summary_json (json_path)\n\nRead json file to dictionary\n\ndata = read_summary_json('data/seq_only_summary_confidences.json')\ndata\n\n{'ID': 'seq_only_summary_confidences',\n 'chain_iptm_0': None,\n 'chain_pair_iptm_0_0': 0.72,\n 'chain_pair_pae_min_0_0': 0.76,\n 'chain_ptm_0': 0.72,\n 'fraction_disordered': 0.19,\n 'has_clash': 0.0,\n 'iptm': None,\n 'ptm': 0.72,\n 'ranking_score': 0.82}\n\n\n\nsource\n\n\nget_summary_df\n\n get_summary_df (output_dir)\n\nPack the summary json from the output folder to the df\n\nout = get_summary_df('data')\nout\n\n1 summary_confidences.json files detected\n\n\n\n\n\n\n\n\n\nID\nchain_iptm_0\nchain_pair_iptm_0_0\nchain_pair_pae_min_0_0\nchain_ptm_0\nfraction_disordered\nhas_clash\niptm\nptm\nranking_score\n\n\n\n\n0\nseq_only_summary_confidences\nNone\n0.72\n0.76\n0.72\n0.19\n0.0\nNone\n0.72\n0.82",
+    "crumbs": [
+      "Analyze output"
+    ]
+  },
+  {
+    "objectID": "analyze_output.html#specific-for-protein-pairs",
+    "href": "analyze_output.html#specific-for-protein-pairs",
+    "title": "Analyze output",
+    "section": "Specific for protein pairs",
+    "text": "Specific for protein pairs\n\nsource\n\nprocess_summary_df\n\n process_summary_df (df, generate_report=False)\n\nPost process the json-converted pandas df; remove redundant columns; available for pairs\n\n# it's only available for protein pairs\n# out2 = process_summary_df(out)\n\n\nsource\n\n\nget_top_genes\n\n get_top_genes (df, n=30)\n\nGet top genes from the metric\n\n# genes = get_top_genes(out2)\n\n\nsource\n\n\nget_3d_report\n\n get_3d_report (df, index_list, x='iptm', y='ptm',\n                z='chain_pair_pae_min_add', save_dir='af_report')\n\nPlot plotly 3d\n\n# get_3d_report(out2,genes)\n\n\nsource\n\n\nget_report\n\n get_report (out_dir, save_dir='af_report')\n\ndf_sum, top_genes = get_report('af_output/data','af_report/proteinA')\n\ndf_sum.sort_values('iptm_ptm_rnk_add').head(10)\n\nsource\n\n\ncopy_file\n\n copy_file (idx_name, source_dir, dest_dir)\n\nfrom fastcore.utils import L\ncopy_file('proA_proB',source_dir='af_output/proA',dest_dir='af_top')\n# Or \nL(top_genes).map(copy_file,source_dir='af_output/proA',dest_dir='af_top')",
+    "crumbs": [
+      "Analyze output"
+    ]
+  },
+  {
+    "objectID": "analyze_output.html#end",
+    "href": "analyze_output.html#end",
+    "title": "Analyze output",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Analyze output"
+    ]
+  }
+]
