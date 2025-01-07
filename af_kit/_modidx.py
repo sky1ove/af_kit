@@ -24,4 +24,5 @@ d = { 'settings': { 'branch': 'main',
                              'af_kit.core.read_json': ('prepare_json.html#read_json', 'af_kit/core.py'),
                              'af_kit.core.save_input_smi': ('prepare_json.html#save_input_smi', 'af_kit/core.py'),
                              'af_kit.core.save_json': ('prepare_json.html#save_json', 'af_kit/core.py'),
+                             'af_kit.core.split_files_into_folders': ('prepare_json.html#split_files_into_folders', 'af_kit/core.py'),
                              'af_kit.core.split_nfolder': ('prepare_json.html#split_nfolder', 'af_kit/core.py')}}}
