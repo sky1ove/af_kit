@@ -9,7 +9,7 @@
                 "id": "A",
                 "sequence": "SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD",
                 "modifications": [],
-                "unpairedMsaPath": "/root/af_input/subfolder/a3m/CD8A.a3m",
+                "unpairedMsaPath": "/root/af_input/sdf/a3m/CD8A.a3m",
                 "pairedMsa": "",
                 "templates": null
             }
@@ -19,7 +19,7 @@
                 "id": "B",
                 "sequence": "SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD",
                 "modifications": [],
-                "unpairedMsaPath": "/root/af_input/subfolder/a3m/CD8A.a3m",
+                "unpairedMsaPath": "/root/af_input/sdf/a3m/CD8A.a3m",
                 "pairedMsa": "",
                 "templates": null
             }
