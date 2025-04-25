@@ -57,6 +57,7 @@ def get_protein_smiles_json(smi_id:str,
     
     "Get json for protein-ligand docking task"
     raw_smiles = r"{}".format(SMILES) # JSON escaping, \ to \\
+    protein_index = next(i for i, item in enumerate(protein_json["sequences"]) if "protein" in item)
     json_data = {
         "name": smi_id,
         "modelSeeds": seeds,
@@ -68,7 +69,7 @@ def get_protein_smiles_json(smi_id:str,
                 }
             }, 
             {
-                "protein": protein_json["sequences"][0]["protein"]
+                "protein": protein_json["sequences"][protein_index]["protein"]
             },
         ],
         "bondedAtomPairs": [],

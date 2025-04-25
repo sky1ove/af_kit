@@ -13,6 +13,7 @@ from Bio.PDB import PDBParser
 
 import re
 from pathlib import Path
+from .core import *
 
 # %% ../nbs/04_covalent.ipynb 6
 # Mapping bond types to mmCIF-compatible values
@@ -96,7 +97,7 @@ def mol_to_ccd_text(mol, component_id, pdbx_smiles=None, include_hydrogens=False
 
 # %% ../nbs/04_covalent.ipynb 7
 def sdf2ccd(sdf_path,
-            CCD_name='lig-any', # do not use '_'
+            CCD_name='lig-1', # do not use '_'; use as less letter as possible, 'lig-any' leads to extra ligands
             ):
 
     "Convert the compound to the AF3 required CCD format"
@@ -105,16 +106,23 @@ def sdf2ccd(sdf_path,
     return mol_to_ccd_text(mol,CCD_name)
 
 # %% ../nbs/04_covalent.ipynb 9
-def get_protein_ccd_json(protein_json,             # dict with protein sequence
-                         userCCD,                  # ccd text
-                         pair1,                    # protein pair e.g., ["A", 145, "SG"] 1-indexed
-                         pair2,                    # ligand pair e.g., ["L", 1, "C04"] 0-indexed
-                         job_id,                   # str, job/task ID
-                         save_path=None,           # optional output path
-                         seeds=[1]):               # optional random seeds
+def get_protein_ccd_json(protein_json, # dict with protein sequence
+                         rec_residue_num:int, # 1-indexed, for bondedAtomPairs, e.g., ["A", 145, "SG"] 
+                         rec_atom_id:str, # for bondedAtomPairs, e.g., ["A", 145, "SG"] 
+                         lig_sdf_path, # ccd text
+                         lig_atom_id:str, # 0-indexed, for bondedAtomPairs, ["L", 1, "C04"]
+                         job_id:str, # str, job/task ID
+                         save_path=None,# optional output path
+                         seeds=[1], # optional random seeds
+                         ):               
     "Create AlphaFold3 docking JSON with customized CCD ligand and bondedAtomPairs."
+
+    # get userCCD
+    userCCD=sdf2ccd(lig_sdf_path)
+    ccd_id = re.search(r"_chem_comp.id\s+([^\s#]+)", userCCD).group(1)
     
-    ccd_id = re.search(r"_chem_comp.id\s+([^\s#]+)", ccd_text).group(1)
+    protein_index = next(i for i, item in enumerate(protein_json["sequences"]) if "protein" in item)
+
     json_data = {
         "name": job_id,
         "modelSeeds": seeds,
@@ -126,10 +134,10 @@ def get_protein_ccd_json(protein_json,             # dict with protein sequence
                 }
             },
             {
-                "protein": protein_json["sequences"][0]["protein"]
+                "protein": protein_json["sequences"][protein_index]["protein"]
             },
         ],
-        "bondedAtomPairs": [[pair1,pair2]],
+        "bondedAtomPairs": [[["A", rec_residue_num, rec_atom_id],["L", 1, lig_atom_id]]],
         "userCCD": userCCD,
         "dialect": "alphafold3",
         "version": 3

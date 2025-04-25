@@ -11,7 +11,7 @@ def get_docker_command(
     input_dir="af_input", # Directory for input data
     output_dir="af_output", # Directory for output results
     model_dir="af_model", # Directory containing models
-    db_dir="af_db", # Directory for databases. If None, this option is ommitted
+    db_dir="af_database", # Directory for databases. If None, this option is ommitted
     cache_dir="af_cache", # Directory for JAX compilation cache. If None, this option is omitted
     gpus=0, # GPU devices to allocate (e.g., 0,1), if None, ommitted
     docker_name="sky1ove/alphafold3", # Docker image name
