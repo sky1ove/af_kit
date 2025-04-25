@@ -56,7 +56,7 @@ def get_protein_smiles_json(smi_id:str,
                             ):
     
     "Get json for protein-ligand docking task"
-    
+    raw_smiles = r"{}".format(SMILES) # JSON escaping, \ to \\
     json_data = {
         "name": smi_id,
         "modelSeeds": seeds,
@@ -64,7 +64,7 @@ def get_protein_smiles_json(smi_id:str,
             {
                 "ligand": {
                     "id": "L",
-                    "smiles": SMILES,
+                    "smiles": raw_smiles,
                 }
             }, 
             {
