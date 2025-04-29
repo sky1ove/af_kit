@@ -11,3 +11,9 @@ Repository](https://github.com/sky1ove/af_kit):
 ``` sh
 $ pip install -U git+https://github.com/sky1ove/af_kit.git
 ```
+
+## Docker
+
+``` bash
+$ docker pull sky1ove/alphafold3
+```
