@@ -1,9 +1,7 @@
 {
     "name": "smi_name",
     "modelSeeds": [
-        1,
-        2,
-        3
+        1
     ],
     "sequences": [
         {

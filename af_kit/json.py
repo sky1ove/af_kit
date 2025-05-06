@@ -34,7 +34,7 @@ def get_protein_json(name, # job name
         ],
         "bondedAtomPairs": [],
         "dialect": "alphafold3",
-        "version": 2
+        "version": 3
     }
     if save_path:
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
