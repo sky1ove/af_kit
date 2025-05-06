@@ -1,0 +1,472 @@
+[
+  {
+    "objectID": "hpc_run.html",
+    "href": "hpc_run.html",
+    "title": "Singularity & slurm",
+    "section": "",
+    "text": "Check version before downloading singularity deb\nlsb_release -a # check ubuntu version\nwget https://github.com/sylabs/singularity/releases/download/v4.2.1/singularity-ce_4.2.1-focal_amd64.deb\nsudo dpkg –install singularity-ce_4.2.1-focal_amd64.deb sudo apt-get install -f\nCUDA_VISIBLE_DEVICES=3 singularity exec –nv alphafold3.sif\npython -u alphafold3/run_alphafold.py\n–input_dir=af_input_ECD_Immunoglobulin/folder_3\n–output_dir=af_output_ECD_Immunoglobulin\n–model_dir=af_models\n–jax_compilation_cache_dir=af_cache/cache\n–norun_data_pipeline | tee run.log\nCUDA_VISIBLE_DEVICES=3 singularity exec –nv alphafold3.sif\npython -u alphafold3/run_alphafold.py\n–json_path=af_input_ECD_Immunoglobulin/folder_3/IL6ST_NCR1.json\n–output_dir=af_output_ECD_Immunoglobulin\n–model_dir=af_models\n–jax_compilation_cache_dir=af_cache/cache\n–norun_data_pipeline | tee run.log",
+    "crumbs": [
+      "Singularity & slurm"
+    ]
+  },
+  {
+    "objectID": "covalent.html#sdf2ccd",
+    "href": "covalent.html#sdf2ccd",
+    "title": "Covalent",
+    "section": "sdf2CCD",
+    "text": "sdf2CCD\nmol_to_ccd_cif Reference: https://github.com/google-deepmind/alphafold3/issues/178\nAbout hydrogens: https://github.com/google-deepmind/alphafold3/issues/212\n\nsource\n\nmol_to_ccd_text\n\n mol_to_ccd_text (mol, component_id, pdbx_smiles=None,\n                  include_hydrogens=False)\n\n\nsource\n\n\nassign_atom_names_from_graph\n\n assign_atom_names_from_graph (mol)\n\n\nsource\n\n\nsdf2ccd\n\n sdf2ccd (sdf_path, CCD_name='lig-1')\n\nConvert the compound to the AF3 required CCD format\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nsdf_path\n\n\n\n\n\nCCD_name\nstr\nlig-1\ndo not use ’_‘; use as less letter as possible, ’lig-any’ leads to extra ligands\n\n\n\n\nsdf2ccd('covalent_test/lig-HKI.sdf')[:100]\n\n\"data_lig-any\\n#\\n_chem_comp.id lig-any\\n_chem_comp.name 'lig-any'\\n_chem_comp.type non-polymer\\n_chem_com\"\n\n\n\nsource\n\n\nget_protein_ccd_json\n\n get_protein_ccd_json (protein_json, rec_residue_num:int, rec_atom_id:str,\n                       lig_sdf_path, lig_atom_id:str, job_id:str,\n                       save_path=None, seeds=[1])\n\nCreate AlphaFold3 docking JSON with customized CCD ligand and bondedAtomPairs.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nprotein_json\n\n\ndict with protein sequence\n\n\nrec_residue_num\nint\n\n1-indexed, for bondedAtomPairs, e.g., [“A”, 145, “SG”]\n\n\nrec_atom_id\nstr\n\nfor bondedAtomPairs, e.g., [“A”, 145, “SG”]\n\n\nlig_sdf_path\n\n\nccd text\n\n\nlig_atom_id\nstr\n\n0-indexed, for bondedAtomPairs, [“L”, 1, “C04”]\n\n\njob_id\nstr\n\nstr, job/task ID\n\n\nsave_path\nNoneType\nNone\noptional output path\n\n\nseeds\nlist\n[1]\noptional random seeds\n\n\n\nVersion 2, with user ccd and pair as input:\n\ndef get_protein_ccd_json2(protein_json,             # dict with protein sequence\n                         userCCD,                  # ccd text\n                         pair1,                    # protein pair e.g., [\"A\", 145, \"SG\"] 1-indexed\n                         pair2,                    # ligand pair e.g., [\"L\", 1, \"C04\"] 0-indexed\n                         job_id,                   # str, job/task ID\n                         save_path=None,           # optional output path\n                         seeds=[1]):               # optional random seeds\n    \"Create AlphaFold3 docking JSON with customized CCD ligand and bondedAtomPairs.\"\n    \n    ccd_id = re.search(r\"_chem_comp.id\\s+([^\\s#]+)\", ccd_text).group(1)\n    json_data = {\n        \"name\": job_id,\n        \"modelSeeds\": seeds,\n        \"sequences\": [\n            {\n                \"ligand\": {\n                    \"id\": \"L\",\n                    \"ccdCodes\": [ccd_id]\n                }\n            },\n            {\n                \"protein\": protein_json[\"sequences\"][0][\"protein\"]\n            },\n        ],\n        \"bondedAtomPairs\": [[pair1,pair2]],\n        \"userCCD\": userCCD,\n        \"dialect\": \"alphafold3\",\n        \"version\": 3\n    }\n\n    if save_path:\n        Path(save_path).parent.mkdir(parents=True, exist_ok=True)\n        dump_json(json_data, save_path)\n\n    return json_data\n\n\n\nReference:\n\n# import collections\n# from collections.abc import Mapping, Sequence\n\n# from absl import logging\n# from alphafold3.cpp import cif_dict\n# import numpy as np\n# import rdkit.Chem as rd_chem\n# from rdkit.Chem import AllChem as rd_all_chem\n\n# def mol_to_ccd_cif(\n#     mol: rd_chem.Mol,\n#     component_id: str,\n#     pdbx_smiles: str | None = None,\n#     include_hydrogens: bool = True,\n# ) -&gt; cif_dict.CifDict:\n#   \"\"\"Creates a CCD-like mmcif data block from an rdkit Mol object.\n\n#   Only a subset of associated mmcif fields is populated, but that is\n#   sufficient for further usage, e.g. in featurization code.\n\n#   Atom names can be specified via `atom_name` property. For atoms with\n#   unspecified value of that property, the name is assigned based on element type\n#   and the order in the Mol object.\n\n#   If the Mol object has associated conformers, atom positions from the first of\n#   them will be populated in the resulting mmcif file.\n\n#   Args:\n#      mol: An rdkit molecule.\n#      component_id: Name of the molecule to use in the resulting mmcif. That is\n#        equivalent to CCD code.\n#      pdbx_smiles: If specified, the value will be used to populate\n#        `_chem_comp.pdbx_smiles`.\n#      include_hydrogens: Whether to include atom and bond data involving\n#        hydrogens.\n\n#   Returns:\n#      An mmcif data block corresponding for the given rdkit molecule.\n\n#   Raises:\n#     UnsupportedMolBond: When a molecule contains a bond that can't be\n#       represented with mmcif.\n#   \"\"\"\n#   mol = rd_chem.Mol(mol)\n#   if include_hydrogens:\n#     mol = rd_chem.AddHs(mol)\n#   rd_chem.Kekulize(mol)\n\n#   if mol.GetNumConformers() &gt; 0:\n#     ideal_conformer = mol.GetConformer(0).GetPositions()\n#     ideal_conformer = np.vectorize(lambda x: f'{x:.3f}')(ideal_conformer)\n#   else:\n#     # No data will be populated in the resulting mmcif if the molecule doesn't\n#     # have any conformers attached to it.\n#     ideal_conformer = None\n\n#   mol_cif = collections.defaultdict(list)\n#   mol_cif['data_'] = [component_id]\n#   mol_cif['_chem_comp.id'] = [component_id]\n#   if pdbx_smiles:\n#     mol_cif['_chem_comp.pdbx_smiles'] = [pdbx_smiles]\n\n#   mol = assign_atom_names_from_graph(mol, keep_existing_names=True)\n\n#   for atom_idx, atom in enumerate(mol.GetAtoms()):\n#     element = atom.GetSymbol()\n#     if not include_hydrogens and element in ('H', 'D'):\n#       continue\n\n#     mol_cif['_chem_comp_atom.comp_id'].append(component_id)\n#     mol_cif['_chem_comp_atom.atom_id'].append(atom.GetProp('atom_name'))\n#     mol_cif['_chem_comp_atom.type_symbol'].append(atom.GetSymbol().upper())\n#     mol_cif['_chem_comp_atom.charge'].append(str(atom.GetFormalCharge()))\n#     if ideal_conformer is not None:\n#       coords = ideal_conformer[atom_idx]\n#       mol_cif['_chem_comp_atom.pdbx_model_Cartn_x_ideal'].append(coords[0])\n#       mol_cif['_chem_comp_atom.pdbx_model_Cartn_y_ideal'].append(coords[1])\n#       mol_cif['_chem_comp_atom.pdbx_model_Cartn_z_ideal'].append(coords[2])\n\n#   for bond in mol.GetBonds():\n#     atom1 = bond.GetBeginAtom()\n#     atom2 = bond.GetEndAtom()\n#     if not include_hydrogens and (\n#         atom1.GetSymbol() in ('H', 'D') or atom2.GetSymbol() in ('H', 'D')\n#     ):\n#       continue\n#     mol_cif['_chem_comp_bond.comp_id'].append(component_id)\n#     mol_cif['_chem_comp_bond.atom_id_1'].append(\n#         bond.GetBeginAtom().GetProp('atom_name')\n#     )\n#     mol_cif['_chem_comp_bond.atom_id_2'].append(\n#         bond.GetEndAtom().GetProp('atom_name')\n#     )\n#     try:\n#       bond_type = bond.GetBondType()\n#       # Older versions of RDKit did not have a DATIVE bond type. Convert it to\n#       # SINGLE to match the AF3 training setup.\n#       if bond_type == rd_chem.BondType.DATIVE:\n#         bond_type = rd_chem.BondType.SINGLE\n#       mol_cif['_chem_comp_bond.value_order'].append(\n#           _RDKIT_BOND_TYPE_TO_MMCIF[bond_type]\n#       )\n#       mol_cif['_chem_comp_bond.pdbx_stereo_config'].append(\n#           _RDKIT_BOND_STEREO_TO_MMCIF[bond.GetStereo()]\n#       )\n#     except KeyError as e:\n#       raise UnsupportedMolBondError from e\n#     mol_cif['_chem_comp_bond.pdbx_aromatic_flag'].append(\n#         'Y' if bond.GetIsAromatic() else 'N'\n#     )\n\n#   return cif_dict.CifDict(mol_cif)",
+    "crumbs": [
+      "Covalent"
+    ]
+  },
+  {
+    "objectID": "covalent.html#end",
+    "href": "covalent.html#end",
+    "title": "Covalent",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Covalent"
+    ]
+  },
+  {
+    "objectID": "tutorial_01_virtual_screening.html",
+    "href": "tutorial_01_virtual_screening.html",
+    "title": "Virtual screening",
+    "section": "",
+    "text": "from af_kit.core import *\nimport pandas as pd",
+    "crumbs": [
+      "Virtual screening"
+    ]
+  },
+  {
+    "objectID": "tutorial_01_virtual_screening.html#setup",
+    "href": "tutorial_01_virtual_screening.html#setup",
+    "title": "Virtual screening",
+    "section": "",
+    "text": "from af_kit.core import *\nimport pandas as pd",
+    "crumbs": [
+      "Virtual screening"
+    ]
+  },
+  {
+    "objectID": "tutorial_01_virtual_screening.html#run-single-protein-default-pipeline",
+    "href": "tutorial_01_virtual_screening.html#run-single-protein-default-pipeline",
+    "title": "Virtual screening",
+    "section": "Run single protein default pipeline",
+    "text": "Run single protein default pipeline\n\nJson:\n\ndata = get_protein_json('proteinA','AAA','data/proteinA.json',seeds=[1,2,3])\n\n\ndata\n\n{'name': 'proteinA',\n 'modelSeeds': [1, 2, 3],\n 'sequences': [{'protein': {'id': 'A', 'sequence': 'AAA'}}],\n 'bondedAtomPairs': [],\n 'dialect': 'alphafold3',\n 'version': 3}\n\n\n\n\nDocker command\nMove the generated proteinA.json to the af_input/project_name folder\n\nproject_name='sdf'\n\n\ndocker_single_full(json_path=f\"af_input/{project_name}/proteinA.json\",\n                               output_dir=f\"af_output/{project_name}\")\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --json_path=/root/af_input/sdf/proteinA.json \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models",
+    "crumbs": [
+      "Virtual screening"
+    ]
+  },
+  {
+    "objectID": "tutorial_01_virtual_screening.html#prepare-protein-smiles-files",
+    "href": "tutorial_01_virtual_screening.html#prepare-protein-smiles-files",
+    "title": "Virtual screening",
+    "section": "Prepare protein-smiles files",
+    "text": "Prepare protein-smiles files\n\nRead output json\n\nprotein_json = read_json('data/seq_only_data.json')\n\n\nstr(protein_json)[:1000]\n\n'{\\'dialect\\': \\'alphafold3\\', \\'version\\': 2, \\'name\\': \\'PDCD1_seq_only\\', \\'sequences\\': [{\\'protein\\': {\\'id\\': \\'A\\', \\'sequence\\': \\'LDSPDRPWNPPTFSPALLVVTEGDNATFTCSFSNTSESFVLNWYRMSPSNQTDKLAAFPEDRSQPGQDCRFRVTQLPNGRDFHMSVVRARRNDSGTYLCGAISLAPKAQIKESLRAELRVTERRAEVPTAHPSPSPRPAGQFQTLV\\', \\'modifications\\': [], \\'unpairedMsa\\': \"&gt;query\\\\nLDSPDRPWNPPTFSPALLVVTEGDNATFTCSFSNTSESFVLNWYRMSPSNQTDKLAAFPEDRSQPGQDCRFRVTQLPNGRDFHMSVVRARRNDSGTYLCGAISLAPKAQIKESLRAELRVTERRAEVPTAHPSPSPRPAGQFQTLV\\\\n&gt;UniRef90_UPI0009801507/25-167 [subseq from] Programmed cell death protein 1 n=10 Tax=Homo sapiens TaxID=9606 RepID=UPI0009801507\\\\nLDSPDRPWNPPTFSPALLVVTEGDNATFTCSFSNTSESFVLNWYRMSPSNQTDKLAAFPEDRSQPGQDCRFRVTQLPNGRDFHMSVVRARRNDSGTYLCGAISLAPKAQIKESLRAELRVTERRAEVPTAHPSPSPRPAGQFQ---\\\\n&gt;UniRef90_A0A5F7ZCX7/24-168 [subseq from] Programmed cell death 1 n=1 Tax=Macaca mulatta TaxID=9544 RepID=A0A5F7ZCX7_MACMU\\\\n-ESPDRPWNPPTFSPALLLVTEGDNATFTCSFSNASESFVLNWYRMSPSNQTDKLAAFPEDRSQPGRDCRFRVTQLPNGRDFHMSVVRARRNDSGTYLCGAISLAPKAQIKESLRAELRVTERRAEVPTAHPSPSPRP'\n\n\n\n\nSingle protein-smile pair\n\nout = get_protein_smiles_json('smi_name','CCC',protein_json,'data/protein_smi.json')\n\n\n\nMultiple protein-smile pairs in a df\n\ndf = pd.DataFrame({'idx':['a','b'],'smi':['CCC','OCO']})\ndf\n\n\n\n\n\n\n\n\nidx\nsmi\n\n\n\n\n0\na\nCCC\n\n\n1\nb\nOCO\n\n\n\n\n\n\n\n\nfor idx, smi in df.values:\n    _ = get_protein_smiles_json(idx,smi,protein_json,f'af_input/{project_name}/{idx}.json',seeds=[1,2,3])\n\nThis will generate many json files in the directory",
+    "crumbs": [
+      "Virtual screening"
+    ]
+  },
+  {
+    "objectID": "tutorial_01_virtual_screening.html#split-file-into-multiple-subfolder-for-multi-gpus",
+    "href": "tutorial_01_virtual_screening.html#split-file-into-multiple-subfolder-for-multi-gpus",
+    "title": "Virtual screening",
+    "section": "Split file into multiple subfolder for multi-GPUs",
+    "text": "Split file into multiple subfolder for multi-GPUs\n\nsplit_nfolder(f'af_input/{project_name}')\n\nDistributed 2 files into 4 folders.",
+    "crumbs": [
+      "Virtual screening"
+    ]
+  },
+  {
+    "objectID": "tutorial_01_virtual_screening.html#docker",
+    "href": "tutorial_01_virtual_screening.html#docker",
+    "title": "Virtual screening",
+    "section": "Docker",
+    "text": "Docker\ndocker pull sky1ove/alphafold3\n\nfor i in range(4):\n    docker_multi_infer(input_dir=f\"af_input/{project_name}/folder_{i}\",\n                               output_dir=f\"af_output/{project_name}\",\n                               gpus=i)\n# norun_data_pipeline means skip template search as we already did in the first step\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_0 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=1\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_1 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=2\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_2 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=3\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_3 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline",
+    "crumbs": [
+      "Virtual screening"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "af_kit",
+    "section": "",
+    "text": "Install latest from the af_kit GitHub Repository:\n$ pip install -U git+https://github.com/sky1ove/af_kit.git",
+    "crumbs": [
+      "af_kit"
+    ]
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "af_kit",
+    "section": "",
+    "text": "Install latest from the af_kit GitHub Repository:\n$ pip install -U git+https://github.com/sky1ove/af_kit.git",
+    "crumbs": [
+      "af_kit"
+    ]
+  },
+  {
+    "objectID": "index.html#docker",
+    "href": "index.html#docker",
+    "title": "af_kit",
+    "section": "Docker",
+    "text": "Docker\n$ docker pull sky1ove/alphafold3",
+    "crumbs": [
+      "af_kit"
+    ]
+  },
+  {
+    "objectID": "tutorial_02_protein_pairs.html",
+    "href": "tutorial_02_protein_pairs.html",
+    "title": "Protein pairs",
+    "section": "",
+    "text": "from af_kit.core import *\nfrom af_kit.protein_pairs import *\nimport pandas as pd\nfrom tqdm import tqdm\n\npip install \"colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold\"\n\n## MSA\n\nMSA can be run in cpu only server\n\nPrepare a csv that have first column `id` and second column `sequence` of amino acid sequence\n\n::: {#0bea2a4a-965d-4107-ad6a-21b5c12a0ad8 .cell}\n``` {.python .cell-code}\nproject_name='sdf'\n:::\n\nget_colabfold_cmd('a.csv',project_name)\n\nRun below in terminal:\n\n colabfold_batch a.csv msa_sdf --msa-only\n\n\nAfter finish, copy a3m files to a gpu available place\n\ncopy_a3m(a3m_dir=f'/teamspace/studios/alphfold3/msa_{project_name}',\n         dest_dir=f'af_input/{project_name}/msa')",
+    "crumbs": [
+      "Protein pairs"
+    ]
+  },
+  {
+    "objectID": "tutorial_02_protein_pairs.html#setup",
+    "href": "tutorial_02_protein_pairs.html#setup",
+    "title": "Protein pairs",
+    "section": "",
+    "text": "from af_kit.core import *\nfrom af_kit.protein_pairs import *\nimport pandas as pd\nfrom tqdm import tqdm\n\npip install \"colabfold[alphafold] @ git+https://github.com/sokrypton/ColabFold\"\n\n## MSA\n\nMSA can be run in cpu only server\n\nPrepare a csv that have first column `id` and second column `sequence` of amino acid sequence\n\n::: {#0bea2a4a-965d-4107-ad6a-21b5c12a0ad8 .cell}\n``` {.python .cell-code}\nproject_name='sdf'\n:::\n\nget_colabfold_cmd('a.csv',project_name)\n\nRun below in terminal:\n\n colabfold_batch a.csv msa_sdf --msa-only\n\n\nAfter finish, copy a3m files to a gpu available place\n\ncopy_a3m(a3m_dir=f'/teamspace/studios/alphfold3/msa_{project_name}',\n         dest_dir=f'af_input/{project_name}/msa')",
+    "crumbs": [
+      "Protein pairs"
+    ]
+  },
+  {
+    "objectID": "tutorial_02_protein_pairs.html#json-file",
+    "href": "tutorial_02_protein_pairs.html#json-file",
+    "title": "Protein pairs",
+    "section": "JSON file",
+    "text": "JSON file\nRead the file that contained id and sequence\n\ndf = pd.read_csv('file.csv')\n\n\nprotein_list = df['gene_id'].tolist()\n\n\ndf = generate_pair_df(protein_list)\n\n\nfor idx, row in tqdm(df.iterrows(),total=len(df)):\n    json_data = get_multi_protein_json([row['Gene1'], row['Gene2']], \n                             a3m_dir=f'af_input/{project_name}/a3m', \n                             save_folder=f'af_input/{project_name}')\n\nThis will generate a number of json files in the save_folder.\nWe need to distribute them to nfolders for parallel running when multiple gpus are available.\n\nsplit_nfolder(f'af_input/{project_name}',n=4) # default n is 4",
+    "crumbs": [
+      "Protein pairs"
+    ]
+  },
+  {
+    "objectID": "tutorial_02_protein_pairs.html#docker-command",
+    "href": "tutorial_02_protein_pairs.html#docker-command",
+    "title": "Protein pairs",
+    "section": "Docker Command",
+    "text": "Docker Command\ndocker pull sky1ove/alphafold3\n\nfor i in range(4):\n    docker_multi_full(input_dir=f\"af_input/{project_name}/folder_{i}\",\n                       output_dir=f\"af_output/{project_name}\",\n                       gpus=i)\n\nRun the printed command in your terminal",
+    "crumbs": [
+      "Protein pairs"
+    ]
+  },
+  {
+    "objectID": "tutorial_02_protein_pairs.html#report-for-protein-pairs",
+    "href": "tutorial_02_protein_pairs.html#report-for-protein-pairs",
+    "title": "Protein pairs",
+    "section": "Report for protein pairs",
+    "text": "Report for protein pairs\n\ndf_sum, top_genes = get_report(f\"af_output/{project_name}\",\n                               save_dir=f'af_report/{project_name}')\n\ndf_sum.sort_values('iptm_ptm_rnk_add').head(10)\n\nA 3d plot will be generated with x=‘iptm’,y=‘ptm’,z=‘chain_pair_pae_min_add’\nTop genes are: - Smallest 30 from ‘iptm_ptm_rnk_add’, ‘chain_pair_pae_min_add’, ‘chain_pair_pae_min_0_1’, ‘chain_pair_pae_min_1_0’, ‘iptm_pae_add_rnk’ - Largest 30 from ‘ranking_score’, ‘iptm’, ‘iptm_ptm_add’\ndf_sum contains the score for each metric",
+    "crumbs": [
+      "Protein pairs"
+    ]
+  },
+  {
+    "objectID": "tutorial_02_protein_pairs.html#copy-top-protein-structures-to-a-local-folder",
+    "href": "tutorial_02_protein_pairs.html#copy-top-protein-structures-to-a-local-folder",
+    "title": "Protein pairs",
+    "section": "Copy top protein structures to a local folder",
+    "text": "Copy top protein structures to a local folder\n\nfrom fastcore.utils import L\ncopy_file('proA_proB',source_dir='af_output/proA',dest_dir='af_top')\n\n# Or \nL(top_genes).map(copy_file,source_dir='af_output/proA',dest_dir='af_top')",
+    "crumbs": [
+      "Protein pairs"
+    ]
+  },
+  {
+    "objectID": "tutorial_02_protein_pairs.html#embeddings",
+    "href": "tutorial_02_protein_pairs.html#embeddings",
+    "title": "Protein pairs",
+    "section": "Embeddings",
+    "text": "Embeddings\nTo do",
+    "crumbs": [
+      "Protein pairs"
+    ]
+  },
+  {
+    "objectID": "docker.html#command",
+    "href": "docker.html#command",
+    "title": "Docker command",
+    "section": "Command",
+    "text": "Command\nBefore running, make sure you have af_model, af_output, af_database folder prepared in the current directory\n\nsource\n\nget_docker_command\n\n get_docker_command (input_dir='af_input', output_dir='af_output',\n                     model_dir='af_model', db_dir='af_database',\n                     cache_dir='af_cache', gpus=0,\n                     docker_name='sky1ove/alphafold3', embedding=False,\n                     skip_search=False, search_only=False, json_path=None)\n\nGenerate a Docker run command for Alphafold with customizable parameters.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ninput_dir\nstr\naf_input\nDirectory for input data\n\n\noutput_dir\nstr\naf_output\nDirectory for output results\n\n\nmodel_dir\nstr\naf_model\nDirectory containing models\n\n\ndb_dir\nstr\naf_database\nDirectory for databases. If None, this option is ommitted\n\n\ncache_dir\nstr\naf_cache\nDirectory for JAX compilation cache. If None, this option is omitted\n\n\ngpus\nint\n0\nGPU devices to allocate (e.g., 0,1), if None, ommitted\n\n\ndocker_name\nstr\nsky1ove/alphafold3\nDocker image name\n\n\nembedding\nbool\nFalse\nIf True, includes the –save_embeddings=true flag\n\n\nskip_search\nbool\nFalse\nif MSA is precalculated and present in json; If True, includes the –norun_data_pipeline flag\n\n\nsearch_only\nbool\nFalse\nsearch MSA only; If True, sets skip_search to False and includes the –norun_inference flag\n\n\njson_path\nNoneType\nNone\nPath to JSON file. If not None, uses json_file instead of input_dir\n\n\n\nSingle json file:\n\n# for single json file, we don't need to cache the model\nget_docker_command(json_path=f\"af_input/subfolder/data.json\",\n                   output_dir=\"af_output/subfolder\",\n                   cache_dir=False)\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/subfolder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --json_path=/root/af_input/subfolder/data.json \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models\n\n\nInput directory with json files:\n\n# For a number of json files in the input folder\nget_docker_command(input_dir=\"af_input/subfolder/folder_0\",\n                   output_dir=\"af_output/subfolder\")\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/subfolder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/subfolder/folder_0 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache",
+    "crumbs": [
+      "Docker command"
+    ]
+  },
+  {
+    "objectID": "docker.html#single-json-full-pipeline",
+    "href": "docker.html#single-json-full-pipeline",
+    "title": "Docker command",
+    "section": "Single json full pipeline",
+    "text": "Single json full pipeline\n\nsource\n\ndocker_single_full\n\n docker_single_full (json_path, output_dir, cache_dir=False,\n                     input_dir='af_input', model_dir='af_model',\n                     db_dir='af_database', gpus=0,\n                     docker_name='sky1ove/alphafold3', embedding=False,\n                     skip_search=False, search_only=False)\n\nSingle json task with full pipeline.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\njson_path\nNoneType\nNone\nPath to JSON file. If not None, uses json_file instead of input_dir\n\n\noutput_dir\nstr\naf_output\nDirectory for output results\n\n\ncache_dir\nstr\naf_cache\nDirectory for JAX compilation cache. If None, this option is omitted\n\n\ninput_dir\nstr\naf_input\nDirectory for input data\n\n\nmodel_dir\nstr\naf_model\nDirectory containing models\n\n\ndb_dir\nstr\naf_database\nDirectory for databases. If None, this option is ommitted\n\n\ngpus\nint\n0\nGPU devices to allocate (e.g., 0,1), if None, ommitted\n\n\ndocker_name\nstr\nsky1ove/alphafold3\nDocker image name\n\n\nembedding\nbool\nFalse\nIf True, includes the –save_embeddings=true flag\n\n\nskip_search\nbool\nFalse\nif MSA is precalculated and present in json; If True, includes the –norun_data_pipeline flag\n\n\nsearch_only\nbool\nFalse\nsearch MSA only; If True, sets skip_search to False and includes the –norun_inference flag\n\n\n\n\ndocker_single_full('a.json','output_folder')\n\ndocker run --rm \\\n    --volume \"$HOME/a.json:/root/af_input\" \\\n    --volume \"$HOME/output_folder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --json_path=/root/af_input/ \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models",
+    "crumbs": [
+      "Docker command"
+    ]
+  },
+  {
+    "objectID": "docker.html#folder-input",
+    "href": "docker.html#folder-input",
+    "title": "Docker command",
+    "section": "Folder input",
+    "text": "Folder input\n\nFull pipeline\n\nsource\n\n\ndocker_multi_full\n\n docker_multi_full (input_dir, output_dir, model_dir='af_model',\n                    db_dir='af_database', cache_dir='af_cache', gpus=0,\n                    docker_name='sky1ove/alphafold3', embedding=False,\n                    skip_search=False, search_only=False, json_path=None)\n\nFolder of json as input with full pipeline.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ninput_dir\nstr\naf_input\nDirectory for input data\n\n\noutput_dir\nstr\naf_output\nDirectory for output results\n\n\nmodel_dir\nstr\naf_model\nDirectory containing models\n\n\ndb_dir\nstr\naf_database\nDirectory for databases. If None, this option is ommitted\n\n\ncache_dir\nstr\naf_cache\nDirectory for JAX compilation cache. If None, this option is omitted\n\n\ngpus\nint\n0\nGPU devices to allocate (e.g., 0,1), if None, ommitted\n\n\ndocker_name\nstr\nsky1ove/alphafold3\nDocker image name\n\n\nembedding\nbool\nFalse\nIf True, includes the –save_embeddings=true flag\n\n\nskip_search\nbool\nFalse\nif MSA is precalculated and present in json; If True, includes the –norun_data_pipeline flag\n\n\nsearch_only\nbool\nFalse\nsearch MSA only; If True, sets skip_search to False and includes the –norun_inference flag\n\n\njson_path\nNoneType\nNone\nPath to JSON file. If not None, uses json_file instead of input_dir\n\n\n\n\ndocker_multi_full('input_folder','output_folder')\n\ndocker run --rm \\\n    --volume \"$HOME/input_folder:/root/af_input\" \\\n    --volume \"$HOME/output_folder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache\n\n\n\n\nMSA only\n\nsource\n\n\ndocker_multi_msa\n\n docker_multi_msa (input_dir, output_dir, search_only=True,\n                   model_dir='af_model', db_dir='af_database',\n                   cache_dir='af_cache', gpus=0,\n                   docker_name='sky1ove/alphafold3', embedding=False,\n                   skip_search=False, json_path=None)\n\nMSA search only, without structure inference; CPU only.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ninput_dir\nstr\naf_input\nDirectory for input data\n\n\noutput_dir\nstr\naf_output\nDirectory for output results\n\n\nsearch_only\nbool\nFalse\nsearch MSA only; If True, sets skip_search to False and includes the –norun_inference flag\n\n\nmodel_dir\nstr\naf_model\nDirectory containing models\n\n\ndb_dir\nstr\naf_database\nDirectory for databases. If None, this option is ommitted\n\n\ncache_dir\nstr\naf_cache\nDirectory for JAX compilation cache. If None, this option is omitted\n\n\ngpus\nint\n0\nGPU devices to allocate (e.g., 0,1), if None, ommitted\n\n\ndocker_name\nstr\nsky1ove/alphafold3\nDocker image name\n\n\nembedding\nbool\nFalse\nIf True, includes the –save_embeddings=true flag\n\n\nskip_search\nbool\nFalse\nif MSA is precalculated and present in json; If True, includes the –norun_data_pipeline flag\n\n\njson_path\nNoneType\nNone\nPath to JSON file. If not None, uses json_file instead of input_dir\n\n\n\n\ndocker_multi_msa('input_folder','output_folder')\n\ndocker run --rm \\\n    --volume \"$HOME/input_folder:/root/af_input\" \\\n    --volume \"$HOME/output_folder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_inference\n\n\n\n\nInfer only\n\nsource\n\n\ndocker_multi_infer\n\n docker_multi_infer (input_dir, output_dir, skip_search=True,\n                     model_dir='af_model', db_dir='af_database',\n                     cache_dir='af_cache', gpus=0,\n                     docker_name='sky1ove/alphafold3', embedding=False,\n                     search_only=False, json_path=None)\n\nInfer only with pre-calculated MSA; GPU is needed.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ninput_dir\nstr\naf_input\nDirectory for input data\n\n\noutput_dir\nstr\naf_output\nDirectory for output results\n\n\nskip_search\nbool\nFalse\nif MSA is precalculated and present in json; If True, includes the –norun_data_pipeline flag\n\n\nmodel_dir\nstr\naf_model\nDirectory containing models\n\n\ndb_dir\nstr\naf_database\nDirectory for databases. If None, this option is ommitted\n\n\ncache_dir\nstr\naf_cache\nDirectory for JAX compilation cache. If None, this option is omitted\n\n\ngpus\nint\n0\nGPU devices to allocate (e.g., 0,1), if None, ommitted\n\n\ndocker_name\nstr\nsky1ove/alphafold3\nDocker image name\n\n\nembedding\nbool\nFalse\nIf True, includes the –save_embeddings=true flag\n\n\nsearch_only\nbool\nFalse\nsearch MSA only; If True, sets skip_search to False and includes the –norun_inference flag\n\n\njson_path\nNoneType\nNone\nPath to JSON file. If not None, uses json_file instead of input_dir\n\n\n\n\ndocker_multi_infer('input_folder','output_folder')\n\ndocker run --rm \\\n    --volume \"$HOME/input_folder:/root/af_input\" \\\n    --volume \"$HOME/output_folder:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline",
+    "crumbs": [
+      "Docker command"
+    ]
+  },
+  {
+    "objectID": "docker.html#end",
+    "href": "docker.html#end",
+    "title": "Docker command",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Docker command"
+    ]
+  },
+  {
+    "objectID": "json.html",
+    "href": "json.html",
+    "title": "Generate json",
+    "section": "",
+    "text": "Default pipeline, will run MSA and template search\n\n\nsource\n\n\n\n dump_json (data, save_path)\n\nSave json data into a file\n\nsource\n\n\n\n\n get_protein_json (name, seq, save_path=None, seeds=[1])\n\nGenerate json of single protein sequence for input of docker command\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nname\n\n\njob name\n\n\nseq\n\n\naa sequence\n\n\nsave_path\nNoneType\nNone\n.json\n\n\nseeds\nlist\n[1]\n\n\n\n\n\ndata = get_protein_json('proteinA','AAA','data/proteinA.json',seeds=[1,2,3])\ndata\n\n{'name': 'proteinA',\n 'modelSeeds': [1, 2, 3],\n 'sequences': [{'protein': {'id': 'A', 'sequence': 'AAA'}}],\n 'bondedAtomPairs': [],\n 'dialect': 'alphafold3',\n 'version': 2}",
+    "crumbs": [
+      "Generate json"
+    ]
+  },
+  {
+    "objectID": "json.html#single-protein-sequence-default",
+    "href": "json.html#single-protein-sequence-default",
+    "title": "Generate json",
+    "section": "",
+    "text": "Default pipeline, will run MSA and template search\n\n\nsource\n\n\n\n dump_json (data, save_path)\n\nSave json data into a file\n\nsource\n\n\n\n\n get_protein_json (name, seq, save_path=None, seeds=[1])\n\nGenerate json of single protein sequence for input of docker command\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nname\n\n\njob name\n\n\nseq\n\n\naa sequence\n\n\nsave_path\nNoneType\nNone\n.json\n\n\nseeds\nlist\n[1]\n\n\n\n\n\ndata = get_protein_json('proteinA','AAA','data/proteinA.json',seeds=[1,2,3])\ndata\n\n{'name': 'proteinA',\n 'modelSeeds': [1, 2, 3],\n 'sequences': [{'protein': {'id': 'A', 'sequence': 'AAA'}}],\n 'bondedAtomPairs': [],\n 'dialect': 'alphafold3',\n 'version': 2}",
+    "crumbs": [
+      "Generate json"
+    ]
+  },
+  {
+    "objectID": "json.html#protein-smiles",
+    "href": "json.html#protein-smiles",
+    "title": "Generate json",
+    "section": "Protein-SMILES",
+    "text": "Protein-SMILES\n\nFirst run the normal sequence only pipeline for the protein\nGet the output data.json file, read it, load the [\"sequences\"][0][\"protein\"]\n\n\nsource\n\nread_json\n\n read_json (file_path)\n\n\nprotein_json = read_json('data/seq_only_data.json')\n\n\nsource\n\n\nget_protein_smiles_json\n\n get_protein_smiles_json (smi_id:str, SMILES:str, protein_json,\n                          save_path=None, seeds=[1])\n\nGet json for protein-ligand docking task\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nsmi_id\nstr\n\n\n\n\nSMILES\nstr\n\n\n\n\nprotein_json\n\n\njson type\n\n\nsave_path\nNoneType\nNone\n.json\n\n\nseeds\nlist\n[1]\n\n\n\n\n\nout = get_protein_smiles_json('smi_name','CCC',protein_json,'data/protein_smi.json',seeds=[1,2,3])\n\nLet’s take a look for the json:\n\nstr(out)[:100]\n\n\"{'name': 'smi_name', 'modelSeeds': [1, 2, 3], 'sequences': [{'ligand': {'id': 'L', 'smiles': 'CCC'}}\"\n\n\n\ndf = pd.DataFrame({'idx':['a','b'],'smi':['CCC','OCO']})\ndf\n\n\n\n\n\n\n\n\nidx\nsmi\n\n\n\n\n0\na\nCCC\n\n\n1\nb\nOCO\n\n\n\n\n\n\n\n\nproject_name='sdf'\nfor idx, smi in df.values:\n    _ = get_protein_smiles_json(idx,smi,protein_json,f'af_input/{project_name}/{idx}.json',seeds=[1,2,3])",
+    "crumbs": [
+      "Generate json"
+    ]
+  },
+  {
+    "objectID": "json.html#split-the-files-to-subfolder-for-multi-gpus",
+    "href": "json.html#split-the-files-to-subfolder-for-multi-gpus",
+    "title": "Generate json",
+    "section": "Split the files to subfolder for multi-GPUs",
+    "text": "Split the files to subfolder for multi-GPUs\n\nsource\n\nsplit_nfolder\n\n split_nfolder (folder_dir, n=4)\n\nMove json files from a folder into subfolders (folder_0, folder_1, …, folder_N).\n\nsplit_nfolder(f'af_input/{project_name}')\n\nDistributed 2 files into 4 folders.",
+    "crumbs": [
+      "Generate json"
+    ]
+  },
+  {
+    "objectID": "json.html#end",
+    "href": "json.html#end",
+    "title": "Generate json",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Generate json"
+    ]
+  },
+  {
+    "objectID": "analyze.html#read-summary-confidences-json",
+    "href": "analyze.html#read-summary-confidences-json",
+    "title": "Analyze",
+    "section": "Read summary confidences json",
+    "text": "Read summary confidences json\n\nsource\n\nread_summary_json\n\n read_summary_json (json_path)\n\nRead json file to dictionary\n\ndata = read_summary_json('data/seq_only_summary_confidences.json')\ndata\n\n{'ID': 'seq_only_summary_confidences',\n 'chain_iptm_0': None,\n 'chain_pair_iptm_0_0': 0.72,\n 'chain_pair_pae_min_0_0': 0.76,\n 'chain_ptm_0': 0.72,\n 'fraction_disordered': 0.19,\n 'has_clash': 0.0,\n 'iptm': None,\n 'ptm': 0.72,\n 'ranking_score': 0.82}\n\n\n\nsource\n\n\nget_summary_df\n\n get_summary_df (output_dir)\n\nPack the summary json from the output folder to the df\n\nout = get_summary_df('data')\nout\n\n1 summary_confidences.json files detected\n\n\n\n\n\n\n\n\n\nID\nchain_iptm_0\nchain_pair_iptm_0_0\nchain_pair_pae_min_0_0\nchain_ptm_0\nfraction_disordered\nhas_clash\niptm\nptm\nranking_score\n\n\n\n\n0\nseq_only_summary_confidences\nNone\n0.72\n0.76\n0.72\n0.19\n0.0\nNone\n0.72\n0.82",
+    "crumbs": [
+      "Analyze"
+    ]
+  },
+  {
+    "objectID": "analyze.html#specific-for-protein-pairs",
+    "href": "analyze.html#specific-for-protein-pairs",
+    "title": "Analyze",
+    "section": "Specific for protein pairs",
+    "text": "Specific for protein pairs\n\nsource\n\nprocess_summary_df\n\n process_summary_df (df, generate_report=False)\n\nPost process the json-converted pandas df; remove redundant columns; available for pairs\n\n# out2 = process_summary_df(out)\n\n\nsource\n\n\nget_top_cases\n\n get_top_cases (df, n=30)\n\nGet top cases from the metric\n\n# genes = get_top_cases(out2)\n\n\nsource\n\n\nget_3d_report\n\n get_3d_report (df, index_list, x='iptm', y='ptm',\n                z='chain_pair_pae_min_add', save_dir='af_report')\n\nGenerate 3d plot html file given case index and x, y, z colname\n\n# get_3d_report(out2,genes)\n\n\nsource\n\n\nget_report\n\n get_report (out_dir, save_dir='af_report')\n\nGenerate summary report based on summary_confidences file; return summary df and top cases\ndf_sum, top_genes = get_report('af_output/data','af_report/proteinA')\n\ndf_sum.sort_values('iptm_ptm_rnk_add').head(10)\n\nsource\n\n\ncopy_file\n\n copy_file (idx_name, source_dir, dest_dir)\n\nCopy all model cif generated by AF3 to the new dest folder\nfrom fastcore.utils import L\ncopy_file('proA_proB',source_dir='af_output/proA',dest_dir='af_top')\n# Or \nL(top_genes).map(copy_file,source_dir='af_output/proA',dest_dir='af_top')",
+    "crumbs": [
+      "Analyze"
+    ]
+  },
+  {
+    "objectID": "analyze.html#end",
+    "href": "analyze.html#end",
+    "title": "Analyze",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Analyze"
+    ]
+  },
+  {
+    "objectID": "tutorial_03_covalent_bond.html",
+    "href": "tutorial_03_covalent_bond.html",
+    "title": "Covalent bond small inhibitor",
+    "section": "",
+    "text": "github AF3 issues: https://github.com/google-deepmind/alphafold3/issues/159",
+    "crumbs": [
+      "Covalent bond small inhibitor"
+    ]
+  },
+  {
+    "objectID": "tutorial_03_covalent_bond.html#reference",
+    "href": "tutorial_03_covalent_bond.html#reference",
+    "title": "Covalent bond small inhibitor",
+    "section": "",
+    "text": "github AF3 issues: https://github.com/google-deepmind/alphafold3/issues/159",
+    "crumbs": [
+      "Covalent bond small inhibitor"
+    ]
+  },
+  {
+    "objectID": "tutorial_03_covalent_bond.html#setup",
+    "href": "tutorial_03_covalent_bond.html#setup",
+    "title": "Covalent bond small inhibitor",
+    "section": "Setup",
+    "text": "Setup\n\nfrom af_kit.core import *\nfrom af_kit.covalent import *\nimport pandas as pd",
+    "crumbs": [
+      "Covalent bond small inhibitor"
+    ]
+  },
+  {
+    "objectID": "tutorial_03_covalent_bond.html#prepare-json-file",
+    "href": "tutorial_03_covalent_bond.html#prepare-json-file",
+    "title": "Covalent bond small inhibitor",
+    "section": "Prepare json file",
+    "text": "Prepare json file\n\nseq='HHHHHHAPNQALLRILKETEFKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREATSPKANKEILDEAYVMASVDNPHVCRLLGICLTSTVQLIMQLMPFGCLLDYVREHKDNIGSQYLLNWCVQIAKGMNYLEDRRLVHRDLAARNVLVKTPQHVKITDFGRAKLLGAEEKEYHAEGGKVPIKWMALESILHRIYTHQSDVWSYGVTVWELMTFGSKPYDGIPASEISSILEKGERLPQPPICTIDVYMIMVKCWMIDADSRPKFRELIIEFSKMARDPQRYLVIQGDERMHLPSPTDSNFYRALMDEEDMDDVVDADEYLIPQQG'\n\n\nseq[106-1] # always check if the bonded Atom Pair of receptor is correct\n\n'C'\n\n\nFirst run with database to get msa and template:\n\nprotein_json = get_protein_json('proteinA',seq,'data/proteinA.json',seeds=[1])\n\nSecond run directly read the protein json:\n\nprotein_json = read_json('3w2q_test_data.json')\n\n\nprint(str(protein_json)[:1000])\n\n{'dialect': 'alphafold3', 'version': 3, 'name': '3W2Q_test', 'sequences': [{'ligand': {'id': 'L', 'ccdCodes': ['lig-any']}}, {'protein': {'id': 'A', 'sequence': 'HHHHHHAPNQALLRILKETEFKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREATSPKANKEILDEAYVMASVDNPHVCRLLGICLTSTVQLIMQLMPFGCLLDYVREHKDNIGSQYLLNWCVQIAKGMNYLEDRRLVHRDLAARNVLVKTPQHVKITDFGRAKLLGAEEKEYHAEGGKVPIKWMALESILHRIYTHQSDVWSYGVTVWELMTFGSKPYDGIPASEISSILEKGERLPQPPICTIDVYMIMVKCWMIDADSRPKFRELIIEFSKMARDPQRYLVIQGDERMHLPSPTDSNFYRALMDEEDMDDVVDADEYLIPQQG', 'modifications': [], 'unpairedMsa': \"&gt;query\\nHHHHHHAPNQALLRILKETEFKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREATSPKANKEILDEAYVMASVDNPHVCRLLGICLTSTVQLIMQLMPFGCLLDYVREHKDNIGSQYLLNWCVQIAKGMNYLEDRRLVHRDLAARNVLVKTPQHVKITDFGRAKLLGAEEKEYHAEGGKVPIKWMALESILHRIYTHQSDVWSYGVTVWELMTFGSKPYDGIPASEISSILEKGERLPQPPICTIDVYMIMVKCWMIDADSRPKFRELIIEFSKMARDPQRYLVIQGDERMHLPSPTDSNFYRALMDEEDMDDVVDADEYLIPQQG\\n&gt;UniRef90_A0A498NET7/528-812 [subseq from] Receptor protein-tyrosine kinase n=2 Tax=Labeo rohita TaxID=84645 RepID=A0A498NET7_",
+    "crumbs": [
+      "Covalent bond small inhibitor"
+    ]
+  },
+  {
+    "objectID": "tutorial_03_covalent_bond.html#prepare-ligand",
+    "href": "tutorial_03_covalent_bond.html#prepare-ligand",
+    "title": "Covalent bond small inhibitor",
+    "section": "Prepare ligand",
+    "text": "Prepare ligand\nLoad pdb in maestro, split complex, save ligand (without covalent bond) into pdb\nConvert the pdb to ccd\n\nccd_text = sdf2ccd('covalent_test/lig-HKI.sdf')\n\n\nccd_text\n\n\"data_lig-1\\n#\\n_chem_comp.id lig-1\\n_chem_comp.name 'lig-1'\\n_chem_comp.type non-polymer\\n_chem_comp.formula '?'\\n_chem_comp.mon_nstd_parent_comp_id ?\\n_chem_comp.pdbx_synonyms ?\\n_chem_comp.formula_weight '?'\\n#\\nloop_\\n_chem_comp_atom.comp_id\\n_chem_comp_atom.atom_id\\n_chem_comp_atom.type_symbol\\n_chem_comp_atom.charge\\n_chem_comp_atom.pdbx_leaving_atom_flag\\n_chem_comp_atom.pdbx_model_Cartn_x_ideal\\n_chem_comp_atom.pdbx_model_Cartn_y_ideal\\n_chem_comp_atom.pdbx_model_Cartn_z_ideal\\nlig-1 C1 C 0 N 1.654 24.013 52.956\\nlig-1 C2 C 0 N 1.438 32.804 50.984\\nlig-1 C3 C 0 N 0.712 33.151 49.868\\nlig-1 C4 C 0 N -0.692 25.377 50.586\\nlig-1 C5 C 0 N -0.322 26.674 50.279\\nlig-1 C6 C 0 N 1.518 31.470 51.317\\nlig-1 C7 C 0 N -0.243 20.239 50.608\\nlig-1 C8 C 0 N 1.486 18.601 51.967\\nlig-1 C9 C 0 N 1.586 24.734 50.460\\nlig-1 C10 C 0 N 0.101 32.158 49.137\\nlig-1 C11 C 0 N 2.414 21.749 53.291\\nlig-1 C12 C 0 N 1.591 22.631 52.634\\nlig-1 C13 C 0 N 0.661 20.790 51.497\\nlig-1 C14 C 0 N 1.536 19.963 52.199\\nlig-1 C15 C 0 N 0.256 24.378 50.677\\nlig-1 C16 C 0 N -0.289 18.874 50.388\\nlig-1 C17 C 0 N 0.679 22.164 51.710\\nlig-1 C18 C 0 N 1.009 26.999 50.081\\nlig-1 C19 C 0 N 0.589 18.055 51.071\\nlig-1 C20 C 0 N 1.985 26.032 50.174\\nlig-1 C21 C 0 N 0.874 30.542 50.526\\nlig-1 C22 C 0 N -2.591 18.634 49.703\\nlig-1 C23 C 0 N 1.402 14.519 51.149\\nlig-1 C24 C 0 N -7.831 18.607 48.749\\nlig-1 C25 C 0 N -7.717 17.604 46.668\\nlig-1 C26 C 0 N 0.962 29.094 50.896\\nlig-1 C27 C 0 N -3.554 17.670 49.067\\nlig-1 C28 C 0 N -5.011 18.123 49.196\\nlig-1 C29 C 0 N -5.726 17.713 47.913\\nlig-1 C30 C 0 N 1.690 16.001 51.281\\nlig-1 N31 N 0 N 1.622 25.129 53.300\\nlig-1 N32 N 0 N 2.416 20.432 53.093\\nlig-1 N33 N 0 N 0.164 30.856 49.437\\nlig-1 N34 N 0 N -0.176 23.061 51.022\\nlig-1 N35 N 0 N -1.237 18.341 49.477\\nlig-1 N36 N 0 N -6.959 18.439 47.595\\nlig-1 O37 O 0 N -3.018 19.579 50.358\\nlig-1 O38 O 0 N 1.397 28.299 49.780\\nlig-1 O39 O 0 N 0.523 16.689 50.833\\nlig-1 Cl40 Cl 0 N 3.657 26.498 49.921\\n#\\nloop_\\n_chem_comp_bond.atom_id_1\\n_chem_comp_bond.atom_id_2\\n_chem_comp_bond.value_order\\n_chem_comp_bond.pdbx_aromatic_flag\\nC1 C12 SING N\\nC1 N31 TRIP N\\nC2 C3 DOUB N\\nC2 C6 SING N\\nC3 C10 SING N\\nC4 C5 DOUB N\\nC4 C15 SING N\\nC5 C18 SING N\\nC6 C21 DOUB N\\nC7 C13 DOUB N\\nC7 C16 SING N\\nC8 C14 DOUB N\\nC8 C19 SING N\\nC9 C15 DOUB N\\nC9 C20 SING N\\nC10 N33 DOUB N\\nC11 C12 SING N\\nC11 N32 DOUB N\\nC12 C17 DOUB N\\nC13 C14 SING N\\nC13 C17 SING N\\nC14 N32 SING N\\nC15 N34 SING N\\nC16 C19 DOUB N\\nC16 N35 SING N\\nC17 N34 SING N\\nC18 C20 DOUB N\\nC18 O38 SING N\\nC19 O39 SING N\\nC20 Cl40 SING N\\nC21 C26 SING N\\nC21 N33 SING N\\nC22 C27 SING N\\nC22 N35 SING N\\nC22 O37 DOUB N\\nC23 C30 SING N\\nC24 N36 SING N\\nC25 N36 SING N\\nC26 O38 SING N\\nC27 C28 SING N\\nC28 C29 SING N\\nC29 N36 SING N\\nC30 O39 SING N\\n#\"\n\n\n\nget_protein_ccd_json?\n\n\nSignature:\nget_protein_ccd_json(\n    protein_json,\n    rec_residue_num: int,\n    rec_atom_id: str,\n    lig_sdf_path,\n    lig_atom_id: str,\n    job_id: str,\n    save_path=None,\n    seeds=[1],\n)\nDocstring: Create AlphaFold3 docking JSON with customized CCD ligand and bondedAtomPairs.\nFile:      ~/af_kit/af_kit/covalent.py\nType:      function\n\n\n\n\ndata = get_protein_ccd_json(protein_json,\n                            106,\n                            'SG',\n                            'covalent_test/lig-HKI.sdf',\n                            'C28',\n                            'test',\n                            '3W2Q_3.json')\n\n\nprint(str(data)[:1000])\n\n{'name': '3W2Q_test', 'modelSeeds': [1], 'sequences': [{'ligand': {'id': 'L', 'ccdCodes': ['lig-any']}}, {'protein': {'id': 'A', 'sequence': 'HHHHHHAPNQALLRILKETEFKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREATSPKANKEILDEAYVMASVDNPHVCRLLGICLTSTVQLIMQLMPFGCLLDYVREHKDNIGSQYLLNWCVQIAKGMNYLEDRRLVHRDLAARNVLVKTPQHVKITDFGRAKLLGAEEKEYHAEGGKVPIKWMALESILHRIYTHQSDVWSYGVTVWELMTFGSKPYDGIPASEISSILEKGERLPQPPICTIDVYMIMVKCWMIDADSRPKFRELIIEFSKMARDPQRYLVIQGDERMHLPSPTDSNFYRALMDEEDMDDVVDADEYLIPQQG', 'modifications': [], 'unpairedMsa': \"&gt;query\\nHHHHHHAPNQALLRILKETEFKKIKVLGSGAFGTVYKGLWIPEGEKVKIPVAIKELREATSPKANKEILDEAYVMASVDNPHVCRLLGICLTSTVQLIMQLMPFGCLLDYVREHKDNIGSQYLLNWCVQIAKGMNYLEDRRLVHRDLAARNVLVKTPQHVKITDFGRAKLLGAEEKEYHAEGGKVPIKWMALESILHRIYTHQSDVWSYGVTVWELMTFGSKPYDGIPASEISSILEKGERLPQPPICTIDVYMIMVKCWMIDADSRPKFRELIIEFSKMARDPQRYLVIQGDERMHLPSPTDSNFYRALMDEEDMDDVVDADEYLIPQQG\\n&gt;UniRef90_A0A498NET7/528-812 [subseq from] Receptor protein-tyrosine kinase n=2 Tax=Labeo rohita TaxID=84645 RepID=A0A498NET7_LABRO\\n---KHHKKKETRR\n\n\n\nstr(data)[-1000:]\n\nig-any O37 O 0 N -3.018 19.579 50.358\\nlig-any O38 O 0 N 1.397 28.299 49.780\\nlig-any O39 O 0 N 0.523 16.689 50.833\\nlig-any Cl40 Cl 0 N 3.657 26.498 49.921\\n#\\nloop_\\n_chem_comp_bond.atom_id_1\\n_chem_comp_bond.atom_id_2\\n_chem_comp_bond.value_order\\n_chem_comp_bond.pdbx_aromatic_flag\\nC1 C12 SING N\\nC1 N31 TRIP N\\nC2 C3 DOUB N\\nC2 C6 SING N\\nC3 C10 SING N\\nC4 C5 DOUB N\\nC4 C15 SING N\\nC5 C18 SING N\\nC6 C21 DOUB N\\nC7 C13 DOUB N\\nC7 C16 SING N\\nC8 C14 DOUB N\\nC8 C19 SING N\\nC9 C15 DOUB N\\nC9 C20 SING N\\nC10 N33 DOUB N\\nC11 C12 SING N\\nC11 N32 DOUB N\\nC12 C17 DOUB N\\nC13 C14 SING N\\nC13 C17 SING N\\nC14 N32 SING N\\nC15 N34 SING N\\nC16 C19 DOUB N\\nC16 N35 SING N\\nC17 N34 SING N\\nC18 C20 DOUB N\\nC18 O38 SING N\\nC19 O39 SING N\\nC20 Cl40 SING N\\nC21 C26 SING N\\nC21 N33 SING N\\nC22 C27 SING N\\nC22 N35 SING N\\nC22 O37 DOUB N\\nC23 C30 SING N\\nC24 N36 SING N\\nC25 N36 SING N\\nC26 O38 SING N\\nC27 C28 SING N\\nC28 C29 SING N\\nC29 N36 SING N\\nC30 O39 SING N\\n#\", 'dialect': 'alphafold3', 'version': 3}\n\n\n\ndata['bondedAtomPairs']\n\n[[['A', 106, 'SG'], ['L', 1, 'C28']]]\n\n\n\nDocker command\nMove the generated proteinA.json to the af_input/project_name folder\n\nproject_name='common'\n\nFirst run with search enabled:\n\ndocker_single_full(f\"af_input/{project_name}/3W2Q.json\",\n                               output_dir=f\"af_output/{project_name}\")\n\nAfter the first run, skip msa:\n\ndocker_single_full(json_path=f\"af_input/{project_name}/3W2Q_3.json\",\n                               output_dir=f\"af_output/{project_name}\",skip_search=True)\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/common:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_database:/root/public_databases\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --json_path=/root/af_input/common/3W2Q_3.json \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --norun_data_pipeline\n\n\n\n\nMultiple protein-smile pairs in a df\n\ndf = pd.DataFrame({'idx':['a','b'],'smi':['CCC','OCO']})\ndf\n\n\n\n\n\n\n\n\nidx\nsmi\n\n\n\n\n0\na\nCCC\n\n\n1\nb\nOCO\n\n\n\n\n\n\n\n\nfor idx, smi in df.values:\n    _ = get_protein_smiles_json(idx,smi,protein_json,f'af_input/{project_name}/{idx}.json',seeds=[1,2,3])\n\nThis will generate many json files in the directory",
+    "crumbs": [
+      "Covalent bond small inhibitor"
+    ]
+  },
+  {
+    "objectID": "tutorial_03_covalent_bond.html#split-file-into-multiple-subfolder-for-multi-gpus",
+    "href": "tutorial_03_covalent_bond.html#split-file-into-multiple-subfolder-for-multi-gpus",
+    "title": "Covalent bond small inhibitor",
+    "section": "Split file into multiple subfolder for multi-GPUs",
+    "text": "Split file into multiple subfolder for multi-GPUs\n\nsplit_nfolder(f'af_input/{project_name}')\n\nDistributed 2 files into 4 folders.",
+    "crumbs": [
+      "Covalent bond small inhibitor"
+    ]
+  },
+  {
+    "objectID": "tutorial_03_covalent_bond.html#docker",
+    "href": "tutorial_03_covalent_bond.html#docker",
+    "title": "Covalent bond small inhibitor",
+    "section": "Docker",
+    "text": "Docker\ndocker pull sky1ove/alphafold3\n\nfor i in range(4):\n    docker_multi_infer(input_dir=f\"af_input/{project_name}/folder_{i}\",\n                               output_dir=f\"af_output/{project_name}\",\n                               gpus=i)\n# norun_data_pipeline means skip template search as we already did in the first step\n\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_db:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=0\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_0 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_db:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=1\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_1 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_db:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=2\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_2 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline\ndocker run --rm \\\n    --volume \"$HOME/af_input:/root/af_input\" \\\n    --volume \"$HOME/af_output/sdf:/root/af_output\" \\\n    --volume \"$HOME/af_model:/root/models\" \\\n    --volume \"$HOME/af_db:/root/public_databases\" \\\n    --volume \"$HOME/af_cache:/root/cache\" \\\n    --gpus \"device=3\" \\\n    sky1ove/alphafold3 \\\n    python run_alphafold.py \\\n    --input_dir=/root/af_input/sdf/folder_3 \\\n    --output_dir=/root/af_output \\\n    --model_dir=/root/models \\\n    --jax_compilation_cache_dir=/root/cache \\\n    --norun_data_pipeline",
+    "crumbs": [
+      "Covalent bond small inhibitor"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html",
+    "href": "protein_pairs.html",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "",
+    "text": "We use ColabFold MSA for protein pairs pipeline, as it takes shorter time",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#setup",
+    "href": "protein_pairs.html#setup",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "Setup",
+    "text": "Setup",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#setup-1",
+    "href": "protein_pairs.html#setup-1",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "Setup",
+    "text": "Setup\ndocker pull sky1ove/alphafold3",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#protein-pairs",
+    "href": "protein_pairs.html#protein-pairs",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "Protein pairs",
+    "text": "Protein pairs\nSince protein protein screening involves a lot of proteins, it takes a long time for AF3 default MSA pipeline, so we used colabfold MSA pipeline\n\nsource\n\nget_colabfold_cmd\n\n get_colabfold_cmd (csv_path, project_name)\n\n\nproject_name='sdf'\n\n\nget_colabfold_cmd('sdf.csv',project_name)\n\nRun below in terminal:\n\n colabfold_batch sdf.csv msa_sdf --msa-only",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#msa",
+    "href": "protein_pairs.html#msa",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "MSA",
+    "text": "MSA\n\nsource\n\ncopy_a3m\n\n copy_a3m (a3m_dir:str, dest_dir:str)\n\nCopies all .a3m files from the source directory to the destination directory.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\na3m_dir\nstr\nPath to the source directory containing .a3m files.\n\n\ndest_dir\nstr\nPath to the destination directory where files will be copied\n\n\n\n\ncopy_a3m(a3m_dir='data',dest_dir='af_input')\n\nCopying files: 100%|██████████| 1/1 [00:00&lt;00:00, 637.53file/s]\n\n\nCopied 1 a3m files from data to af_input",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#protein-protein-input",
+    "href": "protein_pairs.html#protein-protein-input",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "Protein-protein input",
+    "text": "Protein-protein input\n\n\n\n\n\n\nImportant\n\n\n\nMake sure a3m files are under af_input, otherwise it won’t detect the files\n\n\n\nsource\n\na3m_to_seq\n\n a3m_to_seq (file_path:pathlib.Path)\n\nGet protein sequence from a3m file\n\na3m_to_seq(Path(f'af_input/{project_name}/a3m/CD8A.a3m'))\n\n'SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD'\n\n\n\nsource\n\n\nget_protein_subjson\n\n get_protein_subjson (gene_name, a3m_dir='.', idx='A', run_template=True)\n\nGet subjson (protein part) with colabfold unpairedMSA .a3m path\n\nsub_json = get_protein_subjson('CD8A',a3m_dir=f'af_input/{project_name}/a3m')\n\n\nsub_json\n\n{'id': 'A',\n 'sequence': 'SQFRVSPLDRTWNLGETVELKCQVLLSNPTSGCSWLFQPRGAAASPTFLLYLSQNKPKAAEGLDTQRFSGKRLGDTFVLTLSDFRRENEGYYFCSALSNSIMYFSHFVPVFLPAKPTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACD',\n 'modifications': [],\n 'unpairedMsaPath': '/root/af_input/sdf/a3m/CD8A.a3m',\n 'pairedMsa': '',\n 'templates': None}\n\n\n\nsource\n\n\ndump_json_folder\n\n dump_json_folder (json_data, folder)\n\nSave json under a folder\n\nsource\n\n\nget_multi_protein_json\n\n get_multi_protein_json (gene_list, a3m_dir, run_template=True,\n                         save_folder=None)\n\nGet json of multiple proteins, with unpaired MSA path indicated (from colabfold MSA)\n\nAF_input = get_multi_protein_json(['CD8A','CD8A'],\n                        a3m_dir=f'af_input/{project_name}/a3m',\n                        save_folder=f'af_input/{project_name}')\n\nYou can generate a list of json files under a folder.\n\nAF_input.keys(), len(AF_input['sequences'])\n\n(dict_keys(['name', 'modelSeeds', 'sequences', 'bondedAtomPairs', 'dialect', 'version']),\n 2)\n\n\n\nsource\n\n\ngenerate_pair_df\n\n generate_pair_df (gene_list, self_pair=True)\n\nUnique pair genes in a gene list\n\ngenerate_pair_df(list('ABC'))\n\n\n\n\n\n\n\n\nGene1\nGene2\n\n\n\n\n0\nA\nB\n\n\n1\nA\nC\n\n\n2\nB\nC\n\n\n3\nA\nA\n\n\n4\nB\nB\n\n\n5\nC\nC\n\n\n\n\n\n\n\n\ndf = generate_pair_df(['CD8A'])\ndf\n\n\n\n\n\n\n\n\nGene1\nGene2\n\n\n\n\n0\nCD8A\nCD8A\n\n\n\n\n\n\n\nGenerate json files first:\n\nfor idx, row in tqdm(df.iterrows(),total=len(df)):\n    json_data = get_multi_protein_json([row['Gene1'], row['Gene2']], \n                             a3m_dir=f'af_input/{project_name}/a3m', \n                             save_folder=f'af_input/{project_name}')\n\n100%|██████████| 1/1 [00:00&lt;00:00, 147.81it/s]\n\n\nSplit them to subfolder:\n\nsplit_nfolder(f'af_input/{project_name}')\n\nDistributed 1 files into 4 folders.",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#docker",
+    "href": "protein_pairs.html#docker",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "Docker",
+    "text": "Docker\nTodo: Pair proteins\nfor i in range(4):\n    get_docker_command(input_dir=f\"af_input/{project_name}/folder_{i}\",\n                       output_dir=f\"af_output/{project_name}\",\n                       gpus=i)",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#end",
+    "href": "protein_pairs.html#end",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "End",
+    "text": "End",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  },
+  {
+    "objectID": "protein_pairs.html#utils",
+    "href": "protein_pairs.html#utils",
+    "title": "Protein pairs & ColabFold pipeline",
+    "section": "Utils",
+    "text": "Utils\n\n# #| export\n# def split_files_into_subfolders(input_folder: str, nfolder: int = 4):\n    \n#     \"Splits `.a3m` files in a folder into subfolders (folder_0, folder_1, ..., folder_N).\"\n    \n#     input_path = Path(input_folder)\n#     if not input_path.is_dir():\n#         raise ValueError(f\"Input folder {input_folder} does not exist or is not a directory.\")\n\n#     # List all `.a3m` files\n#     a3m_files = sorted(input_path.glob(\"*.a3m\"))\n#     if not a3m_files:\n#         print(\"No `.a3m` files found in the input folder.\")\n#         return\n\n#     # Create the subfolders\n#     subfolders = [input_path / f\"folder_{i}\" for i in range(nfolder)]\n#     for folder in subfolders:\n#         folder.mkdir(exist_ok=True)\n\n#     # Distribute the files into the subfolders\n#     for idx, file in enumerate(a3m_files):\n#         target_folder = subfolders[idx % nfolder]\n#         shutil.move(str(file), target_folder / file.name)\n\n#     print(f\"Distributed {len(a3m_files)} files into {nfolder} folders.\")",
+    "crumbs": [
+      "Protein pairs & ColabFold pipeline"
+    ]
+  }
+]
